@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="author" content="Chee Yee Lim" />
+
+<meta name="date" content="2015-11-29" />
+
+<title>Using BoolTraineR to reconstruct asynchronous Boolean models</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+
+
+<link href="data:text/css;charset=utf-8,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23header%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0A%7D%0Apre%20%7B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%20code%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+<div id="header">
+<h1 class="title">Using BoolTraineR to reconstruct asynchronous Boolean models</h1>
+<h4 class="author"><em>Chee Yee Lim</em></h4>
+<h4 class="date"><em>2015-11-29</em></h4>
+</div>
+
+<div id="TOC">
+<ul>
+<li><a href="#brief-introduction"><span class="toc-section-number">1</span> Brief introduction</a></li>
+<li><a href="#installation"><span class="toc-section-number">2</span> Installation</a></li>
+<li><a href="#input-data-format"><span class="toc-section-number">3</span> Input data format</a></li>
+<li><a href="#output-format"><span class="toc-section-number">4</span> Output format</a></li>
+<li><a href="#useful-functions-in-booltrainer"><span class="toc-section-number">5</span> Useful functions in BoolTraineR</a></li>
+<li><a href="#example-workflows"><span class="toc-section-number">6</span> Example workflows</a><ul>
+<li><a href="#inferring-model-without-an-initial-model"><span class="toc-section-number">6.1</span> Inferring model without an initial model</a><ul>
+<li><a href="#full-workflow"><span class="toc-section-number">6.1.1</span> Full workflow</a></li>
+<li><a href="#initial-setup"><span class="toc-section-number">6.1.2</span> Initial setup</a></li>
+<li><a href="#data-preparation"><span class="toc-section-number">6.1.3</span> Data preparation</a></li>
+<li><a href="#run-model-training"><span class="toc-section-number">6.1.4</span> Run model training</a></li>
+</ul></li>
+<li><a href="#inferring-model-with-an-initial-model"><span class="toc-section-number">6.2</span> Inferring model with an initial model</a><ul>
+<li><a href="#full-workflow-1"><span class="toc-section-number">6.2.1</span> Full workflow</a></li>
+<li><a href="#initial-setup-1"><span class="toc-section-number">6.2.2</span> Initial setup</a></li>
+<li><a href="#data-preparation-1"><span class="toc-section-number">6.2.3</span> Data preparation</a></li>
+<li><a href="#run-model-training-1"><span class="toc-section-number">6.2.4</span> Run model training</a></li>
+</ul></li>
+<li><a href="#extending-model-with-more-genes"><span class="toc-section-number">6.3</span> Extending model with more genes</a><ul>
+<li><a href="#full-workflow-2"><span class="toc-section-number">6.3.1</span> Full workflow</a></li>
+<li><a href="#initial-setup-2"><span class="toc-section-number">6.3.2</span> Initial setup</a></li>
+<li><a href="#data-preparation-2"><span class="toc-section-number">6.3.3</span> Data preparation</a></li>
+<li><a href="#add-extra-genes-to-the-initial-boolean-model"><span class="toc-section-number">6.3.4</span> Add extra genes to the initial Boolean model</a></li>
+<li><a href="#estimate-initial-state-for-the-extra-genes"><span class="toc-section-number">6.3.5</span> Estimate initial state for the extra genes</a></li>
+<li><a href="#run-model-training-2"><span class="toc-section-number">6.3.6</span> Run model training</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</div>
+
+<div id="brief-introduction" class="section level1">
+<h1><span class="header-section-number">1</span> Brief introduction</h1>
+<p><code>BoolTraineR</code> is a model learning algorithm for reconstructing and training asynchronous Boolean models using single-cell expression data. Refer to the paper for more details on the concepts behind the algorithm. This vignette serves as a tutorial to demonstrate example workflows that can be adapted to individual cases experienced by users.</p>
+<p>Running <code>BoolTraineR</code> is straightforward. However, note that depending on the (1) size of single-cell expression data and (2) complexity of Boolean model, <code>BoolTraineR</code> may take a long time to complete the computation. In such cases, it is advisable to use the built-in parallel processing capability of <code>BoolTraineR</code>. This can be easily achieved by using <code>doParallel</code> package, as illustrated in the example.</p>
+<p>Note that the examples presented in this vignette are different from the results presented in our paper. The examples presented here have been simplified to speed up the processing time.</p>
+</div>
+<div id="installation" class="section level1">
+<h1><span class="header-section-number">2</span> Installation</h1>
+<p><code>BoolTraineR</code> can be installed from CRAN.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install.packages</span>(<span class="st">'BoolTraineR'</span>)</code></pre></div>
+<p>Or from Github for the latest version.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install_github</span>(<span class="st">&quot;cheeyeelim/booltrainer&quot;</span>)</code></pre></div>
+<p>Also install <code>doParallel</code> package if you intend to use parallel processing.</p>
+</div>
+<div id="input-data-format" class="section level1">
+<h1><span class="header-section-number">3</span> Input data format</h1>
+<p>Depending on the analysis, only 3 types of data will ever be needed. The format of the data required is discussed below.</p>
+<ol style="list-style-type: decimal">
+<li>Expression data. A matrix with genes on the columns, and cells on the row.</li>
+</ol>
+<p>The expression data should be preprocessed as in any standard sequencing data processing pipelines, which includes quality control filtering and normalisation.</p>
+<p>Use <code>initialise_raw_data</code> to convert expression data into a suitable format for model inference.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">data</span>(wilson_raw_data)
+<span class="kw">round</span>(wilson_raw_data[<span class="dv">1</span>:<span class="dv">5</span>,<span class="dv">1</span>:<span class="dv">5</span>], <span class="dv">4</span>)
+
+edata =<span class="st"> </span><span class="kw">initialise_raw_data</span>(wilson_raw_data)</code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">bptf</th>
+<th align="right">cbfa2t3h</th>
+<th align="right">csf1r</th>
+<th align="right">dnmt3a</th>
+<th align="right">eif2b1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">lmpp_002</td>
+<td align="right">1.0261</td>
+<td align="right">2.3944</td>
+<td align="right">2.6847</td>
+<td align="right">1.6636</td>
+<td align="right">2.0203</td>
+</tr>
+<tr class="even">
+<td align="left">lmpp_003</td>
+<td align="right">2.6496</td>
+<td align="right">1.7800</td>
+<td align="right">1.6821</td>
+<td align="right">1.5941</td>
+<td align="right">2.7736</td>
+</tr>
+<tr class="odd">
+<td align="left">lmpp_004</td>
+<td align="right">10.3080</td>
+<td align="right">0.5889</td>
+<td align="right">4.2653</td>
+<td align="right">-0.5565</td>
+<td align="right">0.0026</td>
+</tr>
+<tr class="even">
+<td align="left">lmpp_007</td>
+<td align="right">0.5419</td>
+<td align="right">1.8631</td>
+<td align="right">10.8468</td>
+<td align="right">0.1757</td>
+<td align="right">1.0873</td>
+</tr>
+<tr class="odd">
+<td align="left">lmpp_008</td>
+<td align="right">0.9209</td>
+<td align="right">2.6637</td>
+<td align="right">2.8549</td>
+<td align="right">2.1965</td>
+<td align="right">2.3663</td>
+</tr>
+</tbody>
+</table>
+<ol start="2" style="list-style-type: decimal">
+<li>Initial Boolean model. A data frame with two columns, targets and update functions.</li>
+</ol>
+<p>Note that if an update function contains both activation and inhibition genes, they must be expressed with a separate clause containing only activation genes, and a separate clause containing only inhibition genes. (See the update functions of Gata1 and Gata2 for examples)</p>
+<p>Use <code>initialise_model</code> to convert the input Boolean model into a BoolModel object.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">data</span>(krum_bmodel)
+<span class="kw">head</span>(krum_bmodel)
+
+bmodel =<span class="st"> </span><span class="kw">initialise_model</span>(krum_bmodel)</code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left">targets</th>
+<th align="left">factors</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">gata2</td>
+<td align="left">gata2 &amp; ! ((gata1 &amp; fog1) | sfpi1)</td>
+</tr>
+<tr class="even">
+<td align="left">gata1</td>
+<td align="left">(gata1 | gata2 | fli1) &amp; ! sfpi1</td>
+</tr>
+<tr class="odd">
+<td align="left">fog1</td>
+<td align="left">gata1</td>
+</tr>
+<tr class="even">
+<td align="left">eklf</td>
+<td align="left">gata1 &amp; ! fli1</td>
+</tr>
+<tr class="odd">
+<td align="left">fli1</td>
+<td align="left">gata1 &amp; ! eklf</td>
+</tr>
+<tr class="even">
+<td align="left">scl</td>
+<td align="left">gata1 &amp; ! sfpi1</td>
+</tr>
+</tbody>
+</table>
+<ol start="3" style="list-style-type: decimal">
+<li>Initial state.</li>
+</ol>
+<p>A single row data frame with genes as the columns. The expression state of each gene must be in binarised form, i.e. 0s and 1s.</p>
+<p>Note that all the genes that are present in the initial Boolean model must also be present here.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">data</span>(krum_istate)
+<span class="kw">head</span>(krum_istate)</code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">cjun</th>
+<th align="right">cebpa</th>
+<th align="right">fli1</th>
+<th align="right">gata1</th>
+<th align="right">gata2</th>
+<th align="right">eklf</th>
+<th align="right">sfpi1</th>
+<th align="right">gfi1</th>
+<th align="right">scl</th>
+<th align="right">egrnab</th>
+<th align="right">fog1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">initial_state</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="output-format" class="section level1">
+<h1><span class="header-section-number">4</span> Output format</h1>
+<p>BoolTraineR supports several output formats for Boolean models, as shown below.</p>
+<ul>
+<li><code>outgraph_model</code> - Outputs a Boolean model in a tab-delimited file with each line being an edge (i.e. gene interaction). This function also outputs a node attribute file, which can be used to distinguish gene and AND nodes in a graph plotting software. This format is readable by both Cytoscape and Gephi.</li>
+<li><code>outgenysis_model</code> - Outputs a Boolean model in a space-delimited file with each line being an edge (i.e. gene interaction). This format is readable by genYsis (used for steady state analysis).</li>
+<li><code>writeBM</code> - Outputs a Boolean model in a comma-delimited file similar in format to the input file format (i.e. two columns: genes and update functions).</li>
+</ul>
+<p>BoolTraineR can also output a state transition graph.</p>
+<ul>
+<li><code>outstate_graph</code> - Outputs a state space of a Boolean model simulated with an initial state. This format is readable by both Cytoscape and Gephi.</li>
+</ul>
+</div>
+<div id="useful-functions-in-booltrainer" class="section level1">
+<h1><span class="header-section-number">5</span> Useful functions in BoolTraineR</h1>
+<p>Besides training Boolean models, BoolTraineR can be used for simulating a Boolean model asynchronously and calculate the score of a Boolean model with respect to a data.</p>
+<ul>
+<li><code>model_train</code> - Core function in <code>BoolTraineR</code> that performs Boolean model inference.</li>
+<li><code>simulate_model</code> - Simulate a Boolean model asynchronously using an initial state, and return its state space.</li>
+<li><code>calc_mscore</code> - Calculate a distance score for a Boolean model with respect to an expression data.</li>
+<li><code>model_dist</code> - Calculate the number of genes in the update functions that differ between two Boolean models.</li>
+<li><code>model_setdiff</code> - Show the genes in the update functions that differ between two Boolean models.</li>
+</ul>
+</div>
+<div id="example-workflows" class="section level1">
+<h1><span class="header-section-number">6</span> Example workflows</h1>
+<p>Three example workflows will be discussed in this vignette: (1) Inferring model without an initial model, (2) Inferring model with an initial model, (3) Extending model with more genes. The two workflows are largely similar, which only differ in the data preparation step.</p>
+<div id="inferring-model-without-an-initial-model" class="section level2">
+<h2><span class="header-section-number">6.1</span> Inferring model without an initial model</h2>
+<p>This workflow is intended for use on inferring a Boolean model without an initial model.</p>
+<p>When no initial model is used, BoolTraineR will reconstruct gene interactions from a list of user-specified genes. If the number of genes in the expression data is low (e.g. in qPCR), it is also possible to use all the genes in the expression data.</p>
+<div id="full-workflow" class="section level3">
+<h3><span class="header-section-number">6.1.1</span> Full workflow</h3>
+<p>Full workflow is included here for easy referencing. Each step is discussed in further details below.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">0</span>)  <span class="co">#use to ensure reproducibility. remove in actual use.</span>
+
+<span class="co"># (1) Setup paths and environment.</span>
+<span class="kw">library</span>(BoolTraineR)
+
+<span class="co"># If intending to use parallel processing, uncomment the following lines.</span>
+<span class="co"># library(doParallel) num_core = 4 #specify the number of cores to be used.</span>
+<span class="co"># doParallel::registerDoParallel(cores=num_core)</span>
+
+<span class="co"># (2) Load data.</span>
+<span class="kw">data</span>(wilson_raw_data)  <span class="co">#load a data frame of expression data.</span>
+edata =<span class="st"> </span>wilson_raw_data
+
+<span class="co"># (3) Filter cell types.</span>
+cell_ind =<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;cmp&quot;</span>, <span class="kw">rownames</span>(edata)) |<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;gmp&quot;</span>, <span class="kw">rownames</span>(edata)) |<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;mep&quot;</span>, 
+    <span class="kw">rownames</span>(edata))  <span class="co">#select cells to be included.</span>
+edata =<span class="st"> </span>edata[cell_ind, ]
+
+<span class="co"># (4) Filter genes.</span>
+gene_ind =<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;fli1&quot;</span>, <span class="st">&quot;gata1&quot;</span>, <span class="st">&quot;gata2&quot;</span>, <span class="st">&quot;gfi1&quot;</span>, <span class="st">&quot;scl&quot;</span>, <span class="st">&quot;sfpi1&quot;</span>)  <span class="co">#select genes to be included.</span>
+edata =<span class="st"> </span>edata[, gene_ind]
+
+<span class="co"># (5) Inferring Boolean model.</span>
+final_model =<span class="st"> </span><span class="kw">model_train</span>(edata, <span class="dt">max_varperrule =</span> <span class="dv">4</span>, <span class="dt">verbose =</span> T)
+
+<span class="co"># (6) Visualise the Boolean model generated.</span>
+<span class="kw">plotBM</span>(final_model)</code></pre></div>
+</div>
+<div id="initial-setup" class="section level3">
+<h3><span class="header-section-number">6.1.2</span> Initial setup</h3>
+<p>The first step is to load the <code>BoolTraineR</code> package. If you are intending to use parallel processing, you will also need to load the <code>doParallel</code> package. Then specify how many cores you intend to use using <code>registerDoParallel</code> from the <code>doParallel</code> package.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">0</span>) <span class="co">#use to ensure reproducibility. remove in actual use.</span>
+
+<span class="co">#(1) Setup paths and environment.</span>
+<span class="kw">library</span>(BoolTraineR)
+
+<span class="co">#If intending to use parallel processing, uncomment the following lines. </span>
+<span class="co">#library(doParallel)</span>
+<span class="co">#num_core = 4 #specify the number of cores to be used.</span>
+<span class="co">#doParallel::registerDoParallel(cores=num_core)</span></code></pre></div>
+</div>
+<div id="data-preparation" class="section level3">
+<h3><span class="header-section-number">6.1.3</span> Data preparation</h3>
+<p>Only the expression data is needed for inferring a Boolean model without an initial model.</p>
+<p>To load the data into R, use <code>read.table</code> or <code>read.csv</code>. In this example, we are using the example data included with the package, so we are accessing it by using <code>data</code>.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#(2) Load data.</span>
+<span class="kw">data</span>(wilson_raw_data) <span class="co">#load a data frame of expression data.</span>
+edata =<span class="st"> </span>wilson_raw_data</code></pre></div>
+<p>Once data is loaded, filter the cell types or genes to be included in the analysis if needed. It is advisable to reduce the number of genes to be included if the computation takes too long to complete.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># (3) Filter cell types.</span>
+cell_ind =<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;cmp&quot;</span>, <span class="kw">rownames</span>(edata)) |<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;gmp&quot;</span>, <span class="kw">rownames</span>(edata)) |<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;mep&quot;</span>, 
+    <span class="kw">rownames</span>(edata))  <span class="co">#select cells to be included.</span>
+edata =<span class="st"> </span>edata[cell_ind, ]
+
+<span class="co"># (4) Filter genes.</span>
+gene_ind =<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;fli1&quot;</span>, <span class="st">&quot;gata1&quot;</span>, <span class="st">&quot;gata2&quot;</span>, <span class="st">&quot;gfi1&quot;</span>, <span class="st">&quot;scl&quot;</span>, <span class="st">&quot;sfpi1&quot;</span>)  <span class="co">#select genes to be included.</span>
+edata =<span class="st"> </span>edata[, gene_ind]</code></pre></div>
+</div>
+<div id="run-model-training" class="section level3">
+<h3><span class="header-section-number">6.1.4</span> Run model training</h3>
+<p>To reconstruct a Boolean model from an expression data, run <code>model_train</code>.</p>
+<p>In this example, <code>model_train</code> takes a few seconds to be completed on a single core. If this steps take a very long time to complete, do consider using the parallel processing option as described above.</p>
+<p>You will receive a BoolModel object at the end of the model training process. The BoolModel object can be visualise quickly using <code>plotBM</code>, which is based on <code>igraph</code> package. For easier manipulation, output the Boolean model using <code>outgraph_model</code> and display it with Cytoscape or Gephi.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#(5) Inferring Boolean model.</span>
+final_model =<span class="st"> </span><span class="kw">model_train</span>(edata, <span class="dt">max_varperrule=</span><span class="dv">4</span>, <span class="dt">verbose=</span>T)
+
+<span class="co">#(6) Visualise the Boolean model generated.</span>
+<span class="kw">plotBM</span>(final_model)</code></pre></div>
+<p><img src="data:image/png;base64,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" alt /></p>
+</div>
+</div>
+<div id="inferring-model-with-an-initial-model" class="section level2">
+<h2><span class="header-section-number">6.2</span> Inferring model with an initial model</h2>
+<p>This workflow is intended for use on inferring a Boolean model with an initial model.</p>
+<p>When an initial model is used, note that only genes that are both present in the initial model and expression data will be used for reconstructing gene interactions. Any genes in the initial model that do not have corresponding expression values in the data will keep their original gene interactions as specified in the initial model without any modifications.</p>
+<div id="full-workflow-1" class="section level3">
+<h3><span class="header-section-number">6.2.1</span> Full workflow</h3>
+<p>Full workflow is included here for easy referencing. Each step is discussed in further details below.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">0</span>)  <span class="co">#use to ensure reproducibility. remove in actual use.</span>
+
+<span class="co"># (1) Setup paths and environment.</span>
+<span class="kw">library</span>(BoolTraineR)
+
+<span class="co"># If intending to use parallel processing, uncomment the following lines.</span>
+<span class="co"># library(doParallel) num_core = 4 #specify the number of cores to be used.</span>
+<span class="co"># doParallel::registerDoParallel(cores=num_core)</span>
+
+<span class="co"># (2) Load data.</span>
+<span class="kw">data</span>(krum_bmodel)  <span class="co">#load a data frame of Boolean model.</span>
+<span class="kw">data</span>(krum_istate)  <span class="co">#load a data frame of initial state.</span>
+<span class="kw">data</span>(wilson_raw_data)  <span class="co">#load a data frame of expression data.</span>
+
+bmodel =<span class="st"> </span><span class="kw">initialise_model</span>(krum_bmodel)
+istate =<span class="st"> </span>krum_istate
+edata =<span class="st"> </span>wilson_raw_data
+
+<span class="co"># (3) Filter cell types.</span>
+cell_ind =<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;cmp&quot;</span>, <span class="kw">rownames</span>(edata)) |<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;gmp&quot;</span>, <span class="kw">rownames</span>(edata)) |<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;mep&quot;</span>, 
+    <span class="kw">rownames</span>(edata))  <span class="co">#select cells to be included.</span>
+edata =<span class="st"> </span>edata[cell_ind, ]
+
+<span class="co"># (4) Inferring Boolean model.</span>
+final_model =<span class="st"> </span><span class="kw">model_train</span>(edata, bmodel, istate, <span class="dt">max_varperrule =</span> <span class="dv">4</span>, <span class="dt">verbose =</span> T)
+
+<span class="co"># (5) Visualise the Boolean model generated.</span>
+<span class="kw">plotBM</span>(final_model)</code></pre></div>
+</div>
+<div id="initial-setup-1" class="section level3">
+<h3><span class="header-section-number">6.2.2</span> Initial setup</h3>
+<p>The first step is to load the <code>BoolTraineR</code> package. If you are intending to use parallel processing, you will also need to load the <code>doParallel</code> package. Then specify how many cores you intend to use using <code>registerDoParallel</code> from the <code>doParallel</code> package.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">0</span>) <span class="co">#use to ensure reproducibility. remove in actual use.</span>
+
+<span class="co">#(1) Setup paths and environment.</span>
+<span class="kw">library</span>(BoolTraineR)
+
+<span class="co">#If intending to use parallel processing, uncomment the following lines. </span>
+<span class="co">#library(doParallel)</span>
+<span class="co">#num_core = 4 #specify the number of cores to be used.</span>
+<span class="co">#doParallel::registerDoParallel(cores=num_core)</span></code></pre></div>
+</div>
+<div id="data-preparation-1" class="section level3">
+<h3><span class="header-section-number">6.2.3</span> Data preparation</h3>
+<p>3 pieces of data are needed to infer a Boolean model with an initial model: an expression data, an initial Boolean model and an initial state.</p>
+<p>To load the data into R, use <code>read.table</code> or <code>read.csv</code>. In this example, we are using the example data included with the package, so we are accessing it by using <code>data</code>.</p>
+<p><code>initialise_model</code> converts the data frame containing the Boolean model into a BoolModel object.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#(2) Load data.</span>
+<span class="kw">data</span>(krum_bmodel) <span class="co">#load a data frame of Boolean model.</span>
+<span class="kw">data</span>(krum_istate) <span class="co">#load a data frame of initial state.</span>
+<span class="kw">data</span>(wilson_raw_data) <span class="co">#load a data frame of expression data.</span>
+
+bmodel =<span class="st"> </span><span class="kw">initialise_model</span>(krum_bmodel)
+istate =<span class="st"> </span>krum_istate
+edata =<span class="st"> </span>wilson_raw_data</code></pre></div>
+<p>Once data is loaded, filter the cell types or genes to be included in the analysis if needed. It is advisable to reduce the number of genes to be included if the computation takes too long to complete. In this example, genes are not filtered as all genes that are present in both expression data and Boolean model are used automatically.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># (3) Filter cell types.</span>
+cell_ind =<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;cmp&quot;</span>, <span class="kw">rownames</span>(edata)) |<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;gmp&quot;</span>, <span class="kw">rownames</span>(edata)) |<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;mep&quot;</span>, 
+    <span class="kw">rownames</span>(edata))  <span class="co">#select cells to be included.</span>
+edata =<span class="st"> </span>edata[cell_ind, ]</code></pre></div>
+</div>
+<div id="run-model-training-1" class="section level3">
+<h3><span class="header-section-number">6.2.4</span> Run model training</h3>
+<p>To reconstruct a Boolean model from an expression data, run <code>model_train</code>.</p>
+<p>In this example, <code>model_train</code> takes a few seconds to be completed on a single core. If this steps take a very long time to complete, do consider using the parallel processing option as described above.</p>
+<p>You will receive a BoolModel object at the end of the model training process. The BoolModel object can be visualise using <code>plotBM</code>, which is based on <code>igraph</code> package. For easier manipulation, output the Boolean model using <code>outgraph_model</code> and display it with Cytoscape or Gephi.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#(4) Inferring Boolean model.</span>
+final_model =<span class="st"> </span><span class="kw">model_train</span>(edata, bmodel, istate, <span class="dt">max_varperrule=</span><span class="dv">4</span>, <span class="dt">verbose=</span>T)
+
+<span class="co">#(5) Visualise the Boolean model generated.</span>
+<span class="kw">plotBM</span>(final_model)</code></pre></div>
+<p><img src="data:image/png;base64,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" alt /></p>
+</div>
+</div>
+<div id="extending-model-with-more-genes" class="section level2">
+<h2><span class="header-section-number">6.3</span> Extending model with more genes</h2>
+<p>This workflow is intended for use on extending an initial Boolean model with additional genes.</p>
+<p>When an initial model is used, note that only genes that are both present in the initial model and expression data will be used for reconstructing gene interactions. Any genes in the initial model that do not have corresponding expression values in the data will keep their original gene interactions as specified in the initial model without any modifications.</p>
+<div id="full-workflow-2" class="section level3">
+<h3><span class="header-section-number">6.3.1</span> Full workflow</h3>
+<p>Full workflow is included here for easy referencing. Each step is discussed in further details below.</p>
+<p><em>Note that this example takes a few minutes to run on a single core. The use of parallel processing is recommended.</em></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">0</span>)  <span class="co">#use to ensure reproducibility. remove in actual use.</span>
+
+<span class="co"># (1) Setup paths and environment.</span>
+<span class="kw">library</span>(BoolTraineR)
+
+<span class="co"># If intending to use parallel processing, uncomment the following lines.</span>
+<span class="co"># library(doParallel) num_core = 4 #specify the number of cores to be used.</span>
+<span class="co"># doParallel::registerDoParallel(cores=num_core)</span>
+
+<span class="co"># (2) Load data.</span>
+<span class="kw">data</span>(krum_bmodel)  <span class="co">#load a data frame of Boolean model.</span>
+<span class="kw">data</span>(krum_istate)  <span class="co">#load a data frame of initial state.</span>
+<span class="kw">data</span>(wilson_raw_data)  <span class="co">#load a data frame of expression data.</span>
+
+bmodel =<span class="st"> </span><span class="kw">initialise_model</span>(krum_bmodel)
+istate =<span class="st"> </span>krum_istate
+edata =<span class="st"> </span>wilson_raw_data
+
+<span class="co"># (3) Filter cell types.</span>
+cell_ind =<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;cmp&quot;</span>, <span class="kw">rownames</span>(edata)) |<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;gmp&quot;</span>, <span class="kw">rownames</span>(edata)) |<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;mep&quot;</span>, 
+    <span class="kw">rownames</span>(edata))  <span class="co">#select cells to be included.</span>
+edata =<span class="st"> </span>edata[cell_ind, ]
+
+<span class="co"># (4) Adding extra genes to the initial Boolean model. extra_genes =</span>
+<span class="co"># setdiff(colnames(wilson_raw_data), bmodel@target) #to view available genes</span>
+<span class="co"># to be added.</span>
+<span class="kw">print</span>(extra_genes)  <span class="co">#to view available genes to be added.</span>
+add_gene =<span class="st"> &quot;ldb1&quot;</span>  <span class="co">#genes to be added: ldb1</span>
+grown_bmodel =<span class="st"> </span><span class="kw">grow_bmodel</span>(add_gene, bmodel)
+
+<span class="co"># (5) Estimating initial state for the extra genes.</span>
+tmp_data =<span class="st"> </span><span class="kw">initialise_raw_data</span>(wilson_raw_data)[[<span class="dv">1</span>]]  <span class="co">#preprocess data.</span>
+tmp_istate =<span class="st"> </span><span class="kw">mean</span>(tmp_data[<span class="kw">grepl</span>(<span class="st">&quot;cmp&quot;</span>, <span class="kw">rownames</span>(tmp_data)), add_gene])  <span class="co">#estimating initial state from CMPs.</span>
+tmp_istate =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">round</span>(tmp_istate), <span class="dt">nrow =</span> <span class="dv">1</span>)
+<span class="kw">colnames</span>(tmp_istate) =<span class="st"> </span>add_gene
+grown_istate =<span class="st"> </span><span class="kw">cbind</span>(istate, tmp_istate)
+grown_istate =<span class="st"> </span><span class="kw">initialise_data</span>(grown_istate)
+
+<span class="co"># (6) Inferring Boolean model.</span>
+final_model =<span class="st"> </span><span class="kw">model_train</span>(edata, grown_bmodel, grown_istate, <span class="dt">max_varperrule =</span> <span class="dv">4</span>, 
+    <span class="dt">verbose =</span> T)
+
+<span class="co"># (7) Visualise the Boolean model generated.</span>
+<span class="kw">plotBM</span>(final_model)</code></pre></div>
+</div>
+<div id="initial-setup-2" class="section level3">
+<h3><span class="header-section-number">6.3.2</span> Initial setup</h3>
+<p>The first step is to load the <code>BoolTraineR</code> package. If you are intending to use parallel processing, you will also need to load the <code>doParallel</code> package. Then specify how many cores you intend to use using <code>registerDoParallel</code> from the <code>doParallel</code> package.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">0</span>) <span class="co">#use to ensure reproducibility. remove in actual use.</span>
+
+<span class="co">#(1) Setup paths and environment.</span>
+<span class="kw">library</span>(BoolTraineR)
+
+<span class="co">#If intending to use parallel processing, uncomment the following lines. </span>
+<span class="co">#library(doParallel)</span>
+<span class="co">#num_core = 4 #specify the number of cores to be used.</span>
+<span class="co">#doParallel::registerDoParallel(cores=num_core)</span></code></pre></div>
+</div>
+<div id="data-preparation-2" class="section level3">
+<h3><span class="header-section-number">6.3.3</span> Data preparation</h3>
+<p>3 pieces of data are needed to infer a Boolean model with an initial model: an expression data, an initial Boolean model and an initial state.</p>
+<p>To load the data into R, use <code>read.table</code> or <code>read.csv</code>. In this example, we are using the example data included with the package, so we are accessing it by using <code>data</code>.</p>
+<p><code>initialise_model</code> converts the data frame containing the Boolean model into a BoolModel object.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#(2) Load data.</span>
+<span class="kw">data</span>(krum_bmodel) <span class="co">#load a data frame of Boolean model.</span>
+<span class="kw">data</span>(krum_istate) <span class="co">#load a data frame of initial state.</span>
+<span class="kw">data</span>(wilson_raw_data) <span class="co">#load a data frame of expression data.</span>
+
+bmodel =<span class="st"> </span><span class="kw">initialise_model</span>(krum_bmodel)
+istate =<span class="st"> </span>krum_istate
+edata =<span class="st"> </span>wilson_raw_data</code></pre></div>
+<p>Once data is loaded, filter the cell types or genes to be included in the analysis if needed. It is advisable to reduce the number of genes to be included if the computation takes too long to complete. In this example, genes are not filtered as all genes that are present in both expression data and Boolean model are used automatically.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># (3) Filter cell types.</span>
+cell_ind =<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;cmp&quot;</span>, <span class="kw">rownames</span>(edata)) |<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;gmp&quot;</span>, <span class="kw">rownames</span>(edata)) |<span class="st"> </span><span class="kw">grepl</span>(<span class="st">&quot;mep&quot;</span>, 
+    <span class="kw">rownames</span>(edata))  <span class="co">#select cells to be included.</span>
+edata =<span class="st"> </span>edata[cell_ind, ]</code></pre></div>
+</div>
+<div id="add-extra-genes-to-the-initial-boolean-model" class="section level3">
+<h3><span class="header-section-number">6.3.4</span> Add extra genes to the initial Boolean model</h3>
+<p>Extra genes can be added to the initial model using <code>grow_bmodel</code>. The function will add extra genes into the initial model with empty update functions.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#(4) Adding extra genes to the initial Boolean model.</span>
+<span class="co">#extra_genes = setdiff(colnames(wilson_raw_data), bmodel@target) #to view available genes to be added.</span>
+add_gene =<span class="st"> 'ldb1'</span> <span class="co">#genes to be added: ldb1</span>
+grown_bmodel =<span class="st"> </span><span class="kw">grow_bmodel</span>(add_gene, bmodel)</code></pre></div>
+</div>
+<div id="estimate-initial-state-for-the-extra-genes" class="section level3">
+<h3><span class="header-section-number">6.3.5</span> Estimate initial state for the extra genes</h3>
+<p>Initial state needs to be modify to include the initial expression of the extra genes. The initial state of the extra genes can be set manually, or it can be estimated from the data if the data contain multiple cell types with known relationships. In this example, CMPs are known to be at developmental upstream of erythro-myeloid differentiation, therefore initial state can be estimated by taking the average expression of the extra genes in CMPs.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#(5) Estimating initial state for the extra genes.</span>
+tmp_data =<span class="st"> </span><span class="kw">initialise_raw_data</span>(wilson_raw_data)[[<span class="dv">1</span>]] <span class="co">#preprocess data.</span>
+tmp_istate =<span class="st"> </span><span class="kw">mean</span>(tmp_data[<span class="kw">grepl</span>(<span class="st">'cmp'</span>, <span class="kw">rownames</span>(tmp_data)), add_gene]) <span class="co">#estimating initial state from CMPs.</span>
+tmp_istate =<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">round</span>(tmp_istate), <span class="dt">nrow=</span><span class="dv">1</span>)
+<span class="kw">colnames</span>(tmp_istate) =<span class="st"> </span>add_gene
+grown_istate =<span class="st"> </span><span class="kw">cbind</span>(istate, tmp_istate)
+grown_istate =<span class="st"> </span><span class="kw">initialise_data</span>(grown_istate)</code></pre></div>
+</div>
+<div id="run-model-training-2" class="section level3">
+<h3><span class="header-section-number">6.3.6</span> Run model training</h3>
+<p>To reconstruct a Boolean model from an expression data, run <code>model_train</code>.</p>
+<p>In this example, <code>model_train</code> takes a few minutes to be completed on a single core. If this steps take a very long time to complete, do consider using the parallel processing option as described above.</p>
+<p>You will receive a BoolModel object at the end of the model training process. The BoolModel object can be visualise using <code>plotBM</code>, which is based on <code>igraph</code> package. For easier manipulation, output the Boolean model using <code>outgraph_model</code> and display it with Cytoscape or Gephi.</p>
+<p><em>Note that this example takes a long time to run. The use of parallel processing is recommended.</em></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co">#(6) Inferring Boolean model.</span>
+final_model =<span class="st"> </span><span class="kw">model_train</span>(edata, grown_bmodel, grown_istate, <span class="dt">max_varperrule=</span><span class="dv">4</span>, <span class="dt">verbose=</span>T)
+
+<span class="co">#(7) Visualise the Boolean model generated.</span>
+<span class="kw">plotBM</span>(final_model)</code></pre></div>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCCAMAAABLxjl3AAABSlBMVEUAAAAAACAAADgAAE4AAGMAAHAAAHcAAH4AAIsAAJ8AALMAKmMAOscASVUASWMASXAAZto6ACA6AE46AHA6AHc6AH46AIs6AJ86ALM6KmM6Kos6Oos6SVU6Zto6Z0Y6kMc6kO1mAABmAHBmAItmALNmOsdmSVVmSX5mSYtmZtpmZ0ZmgzZmg0Zmg1VmkMdmkO1mttpmtv+QAACQACCQAHeQAIuQKouQOouQOp+QZouQZ3CQZ36QgzaQg2OQkO2QnTaQnUaQtv+Q2/+2AAC2AIu2SXC2SYu2Zou2g3C2nTa2uDa2uEa2uFW22/+2/+22///IgQDbAADbAHfbZ3DbZ37bkJ/bkLPbnVXbuDbbuEbb29rb////AAD/ACD/ADj/AE7/AGP/gQD/g2P/g3D/nWP/trP/uDf/uEb/uFX/28f/29r//9r//+3////leT2VAAAACXBIWXMAAAuIAAALiAHljilJAAAdu0lEQVR4nO2d+3sduVnHp8l6M7kYDEvNUtoQOKXs1hTqAnG5hqZwTL1ssxR7Cc2U3SX2JAd7/v9f0WUu0ow0I2kkjd457/d54pyr9EqfI41u875ZhQKubGkDUHOFCMELEYIXIgQvRAheiBC8ECF4IULwQoTghQjBCxGCFyIEL0QIXogQvBAheCFC8EKE4IUIwQsRghciBC9ECF6IELwQIXghQvBChOCFCMELEYIXIgQvRAheiBC8ECF4IULwQoTghQjBCxGCFyIEL0QIXogQvBAheCFC8EKE4IUIwQsRghciBC9ECF6IELwQIXghQvBChOCFCMELEYIXIgQvRAheiBC8ECF4IULwQoTghQjBCxGCFyIEL0QIXogQvBAheCFC8EKE4IUIwQsRghciBC9ECF6IELz2CmEp/F2P9gghQVdSrQ3iHiHkADnENWl/EJailjbGp/YGYVmuleGeICwJwu3BBce3ffCCPN8d5/mzpe3yoT1BWJXvnuccIXlAEJa7j19V5w9fLm2XB+0HQtoIy8umFV5ShOeP3yxtlSftB0J2JZQRbp8gQji6ylkfShFu8/yQInybEz16tbRlXrQHCK+OqtsNwUcRXn90ga0QnG6/TxrbZX5CEV7/wWvsSIGoKIrm4U3O9JQg/LfHr/FaCEVFp68/+HnBR6Q5m03giBSGRIRs8sdGpJ89f9x2pOfYChNXA5BcCzdHhODuh+xaePy0RlhhR5q2io4gnVMcVbuP+YiUDmsYwrszRJiMit5Tjq4jyOaFj7K752RMc0Kuhwd/Tx78xTH5cxTf2BACg1C3414U0pOGWweQKaPl9LJNkd7OPxCE2h33jlQhUxMfZ5ygh137FHf+gSDUtaCaWw8fe6d9lHGClZcWlOCGIwyEut3aQhq3qNURDGXH+bKLrSAQanbcp/FxgGEINnbcbhZeLweA8JqOHsk84JKvrZCqY5Vn2gK9ISwHCGuI2AonRKZ07447hG/zp6W0+qJlmGVeCQ4aYdsdXCHCcW2fvC7bFvjuOV2wrr4Rpg76Zjgb4VW9p0j+f/KGNLrtwWfPH7zYHlxs2Qbk+w1/nyA8X/AcTvoIzx8LCMuSrZHJn9D2pDMRso1Gwoi2MsLot57nB3/2j6RXP/jk5P3mkBA8rHbHR+RzD//wlK0BLaPUEbKtooMLinDLMCoQ6jWLINtovMpP784InN3xacmX59jfd88fv36/eVqxdbortpC+2Fmq1BG2rfCf+cEzK4QE3wyE9UbjM4Zpd/ysOX3D/m7ZngcZjVKErLe9yU9dc5onMAib4YwFQla2GQibUQqFQ1rjAOH7zaNfniHCaTkjzKT/7HXT9ozkQkj49BF2HSlHiB2pTu2ItENotEY2u2Rso7Ha/WV1xZoXyVVG+PbBy1JAuNgecvoIzxUIDeShYHyj8dXdGbsmkmlFDyGZR9zkT379ORvOLDc5BIDw8ZseQpNG6KVc9bywOUBF+9MTehQ1/9GGDpPJ86NzOp45X3TzMXmEtKvqI5yW12J9yS5yu+8lendU6gh3bHv9krcDOjk0OoXttVQ3vIHtftbfqUik7hIxY1JWP32/hbpis4XbP33Tt8Pf6usspWHFlDKr3XLfZbrpbsD4RrLD4xL6DKVgw6RoTX3DHi3QCEUVRW3BF3VOKTBMwIRJ0Xoa39iVPx7MkM6IJo8UGC5vwbTsEAYskYCwWfrxuiHpJgAIWRWlRVBqhkszTB9hZtUIgxKUzjU2//s+G2Ct5BFmVghjEewmFIsTTB4hr56JY2rdp8MZojoezh8s3ZUmjjBrGqERwpBj0QHCZAY0KSNs+6ipw6LN50MZojgpl0kMF63GhBG2A4XJ8771x0MZojrsKCFcthoTRlhZIQxZkCFCsfvMQmc/oZQR1jVlcOw+eDnUCMVMl7sepo2w6giOIwxdDA1CKdulqjJthJn6QqT6XFCx3FUIU2CYPMKpU/fd5wJqkLtyKoEIh2qMKyYmhksQVOW6TGUCQWj0sWBS/34U2S5SmykjTJtgMgzBI4wwmNfe/Gb4WmAljLA1bcnLYDWyS6LMO36FposwFYIj+afBEDbCZQlqso9dpcki7AyzbAWeNeqNwerlUEKEE3LpxuNWaqoIIRBMhGGiCAWz9P4sItjhuroes1rTRChaZT6vDiDnVYWI9Zo8wpQJjlkRr2KTRDjdCCOZPQNhvJpNEaFkk+kKcwgZHNhxfM+nlkE47hgUTCOcMKR+M7Qf4SUQTtwsCKgRTlhC3w3vR3iRVjh+y+4kwlgEZyPkDEPfmh8RYRO2c8LlgGyRohpjmezjAPkdD24SFGI8hE3YzqHbiBvJEeQUwmgEfSB8JyEMwzAeQu4daeha992Z5MszFYKGdzSOmqP1I+xVsRGqXOvujs0RxiPo414qRWH9K1aV1F4jqPvHJn5ZnrNOhsa27hD27BkcHQtvqSZnnTQW0XIevKJhvP99k9NgUfkhffJq698Xe+RWuDum7lhZ4KQmLGtZmSOMSHAewt3vvyTFevzfLIw3jcb+fnNIY3p/csqd8/lUXIR3ZwQZKc7Bxbvnh9QZF/WyKyLsmyNXZMTh87x7++/OaInOa3z0HyvvZX5S+Y/3FRfhjgWfI63vhA3VeCy6EYRSRca88WSmj5TdMfd/WfYQHlwEcHoZF+FN/pRfBk/KtzS6bt5rhWONMOoihDnB/UN4yBCyYLrMNaQxwlQJahCyC94aEd5uHlGnrNSx9eVJO1dqEaZC0AqhyrS7MzrVLW9OBIS0zGSMChghv4zf0InE9bdfsJghOZtW0N/s77B7lwa2CNHPYpnZy9dEKtu4F9pHHN8ld8J5cEEQAm6FuzpsJw3AxNwjv61d7VbleeNnMNMGsIu8GD8fISvvo4uqboF5/uekFdJLx483Jv5U5+cfVHX/+Z9sfn/9XdkUOYqk+E5E2REcNa+OZ7GSNdJWrDBv2bimvP7ZwJLudtCi904kWUwouMbs2x6GJrjYfiGfT9SudgeW8Nt6i+EbMWRLUG/g1Yd/dXYaGOCCu/bsWnjQXRWGhtTNMXmCehO/zvNnK921VxwnUSy9cBcF0Q30h7Dukdd4dkYFTGFHwV839N7lSy55KStRtDtoLS+GsOi/MJDQi0bE6Adhz0nHGhEa7EEUvdfjYHTKYrCqNPA0NMMi69yjKOsjnGiE3WuhMTomPxhND5xFzTPLOPNoGiJUfKjQFDwoRMe05XOTKr+JM2yyyjySsj5CNSqtaeGaomu6vQM/A29V+4pwLIlAFP0grLQuhINoAYRZH6E9QfYB/xid05tGGLCe4yPMjBBmRtXpmaJ7YvLFsHfBDuy9OwGE7gSpPDbGGelIk59+WmtDmJkg7M/8J2TiNtgkFffvdmVQ3QQSlmFshJ3X+xELBjN/I83lOOe7bSG0BFeDMBsgVBN0rk93ivNacbMSqHprXQi7Ao0jnNWanCjO7Ih5MdQ3tAZmuMSkohIQem6EtRwozr2Uaq3OssAMFxiR8v+0CDPh3RmyvDDOznC061jZMreEUEPQA0KWijHH+ePZ0UH0ihEOd35HhgWOMqIzP7/RmeweIWxPsXnNcboteshv9ITIehHqCHpGyFIc5ejh0jtak+tCKDa0TP1WCIQ8WU26PgjuJ0ItwVAIdX3q/LW5ao8Qin1l7EbYpN7H6IXgXiJcoBF2OYgc52Y3fep8PxBKJ4ji2FJj9ERwDxHqCcZCyLKavUtlct53TQgzxaPBs5iHt2dDNDrvuwcIeyfA4tgiZOaOcfIU18Q7HrQUwmyk7DERCoMapy0q8cl+IZQWhfs2REUoPrZui/LH9xdhKgT5CzYcex/cC4QdwZGB3KII+auGO1T9F7SVuW6EQwNiTim0bxg0xuH7e4RQOKSwLMHxvKx3N/YAYcbzE45WKLJPoRGKn9FQVJ+T0SSyLoRZJiBU5R4Poem4RUVR/dV9QZg1CJVnuhJrhM1Hexg1X90fhPxAvjrr9Bph9/npvQ1Nda4GIbsOtkeBNTlHROjwlWJ404ukPUDYnYrVZRwNofOq6NgwdW8QVpX2zF7SjbD9phbjyhG2/WjVWyMVlXwjbE1UU1TX54oQNsPRTMsqHkLX7xXi4wHGfUDYZLowQh/7g3VC8k3Zym+tDqGwOjNQNIQ+vyZgXDtCgaCuMiLZ4pUgf6vGqKzQlSDM6uWYOsdFETp2o5N7Fyof8VTgETYOOUWCmiPssRCG+1amOmjcL6nORakTjfAIO7e4X4j5KRHCJ8iHaiJG+lguqdZRsNuNwBFaoeicOhMQ9m9dJs/jIHTrRg2/1PYydS6FonfVuetW1IhFjsGki8BYCHefC0vfYb3s1FkH/VJnPmuMQ584LHaFCmJX9u7mfIMKCV1f3NB/vRAtZrF7i86NgNi5MpvCGjX/tOGoZOOHzknfb3IBocBQUSEOGfpWHcz2/Z+0CEsaz4ggzAqFrd2RqJAUwxIcHIqVGdIa2UoIG4jObjECt0Ju5mVnM31xd/wsqxH2frIx7HJphFZfkUwvBLEX5OromqG7a5MgVXWV5yy21PsNC9BEYxUdXPAnFQuz9S0lQvlodCiIoQkOEf4PKfkHPycPfsUicVGEpEpoJMcte0QD5d0jdfRBOgivHr2qzollt5vD8vqYx+2jwWzZE/L+/bxDKOZvejZ6loITlC0n4L76vZ9ku2Pym/7VveJ2wyKpfYeG3+TBfU/Kq/wou5ffy+6Tfy4MA1TU3dkRj6N5u3naxO2jCPkT0rwoQlW9JIrQ+hsywt/8DQ3td/7o1e33X1UVDXTEInCWW/KXhT26I83vHhkeuEb5DYKQRe0lo86KgMtrhHRUQ5+QgcxXdbzCtSqTnn11/Mf8wdd1uL+6OlgkXPqo+jCnYWNvN3kyCMmk4ZRcDk+pVQefNa2QxtH+jLdChneZVhjFN5vcCjuENG5hN7rrEH6Q0x7r0S/TaYUVvRBygqqOlF0Lu73v7lvGN5nMUAyCA4T3CvbLuXn4UkJIO1KG8OZhdm+TVEdaXZ3y/28evOwQUovJkzffFAWfVAwOvEdAGIWgZDq9FubPyAs3p7ebIzIev/5hjZAFNCaVUpXnT97cfJhlCSGkc/ecTitu8meku3j8X78glv7v35GLAHny688r+VrYfS98P2rdjTqu2UoIm7i+r8jF5ajafcRj+3KOZFhasusOXbD6IL9PamdWbt7EbSZGkQ71cEuGMGQcc0hnh/TJG9bNsmmSTND0jtkZitQIJYRVHdeXRmq8ohEbSx4PnkeHP/gkz2n/yiZh5/n9VFZnvqQ2Vbvv0b+lrHbPvh29CavCglWgCQ4rtVvPl2uEBbrvfdS67AHq6uaI/bfjYXoHOxVZD2KzZdGePgm2QBqpG62GtdpuQNC/EkJVcO1+DcTfqbji05w2TO9gUb4mVnekDUfFco1fxSOoRtgVra2RK218dGHbYqpGgl0LW+NUe9T8HGl3KRxcF0PI9i6YOXllg6fClto3dY2wcd/pnGxUeQURR/eFlC3boO8fq00prt08U/oIxUt+4Tm8b9QTbIOnvSlFUIx26c60QlXYJmXfBYyIsLc3qN5oGs41PMkqydkGyMMRsaj+A70vh1B+RZogBoAYN+KBVK1Zf67vudLjIawUzU45KWRPfVOMS1AomXR4NkQjXBhh95pq48IjxdgE5ZmgeDJxdQibV3XV5gmjTSJ+fjbyTDBrzACPUH3KYhBfuycPGKMTlGeC0qqi9zpPAGEzSxzTPIwW3/XVdcuF5T1NmEYYdUSa6Yag1XisleYzzhiXJshWo4qVINQMQYv+lVIjt4HqAgT7M8NKmPH6rvLYCLuVQvE9PsMws8WaYvRutDePqKRr4QoQKmcRRfMRw7SsMEYm2N7aIr7Gk18LwmaALb5XdB8yTs8UozFsL9OXrgAKhNUqELZP1QjtDDJaTzUmaJGxVpnyobCmPx5hbW6eYZX1vHbpT83YmTRFMSZB7Wa7dCrBQ0Zyrr4TNM1Ni9DBphGMxj5HbfMcqv/bWynCrqZGEDqdftJQjEZwaLOMMBjBNBE6mqVojNEaocLgdSJU7y6p6s/1GFRvhBOJoNpacY20GL7oS6kidIdYCc3RDI3fPXrVy0Lvs08IfUA0mzg658KlNXOdCLvlbKPObpZ1hguqgZqg9FZ/28mrIiOs7BDOPJlfGHCcSXDUQEQof8FeTcJjFOcSNHq3ULD0p+URTlWic0OU/aCps5lH0PSs/LoQtqUxRuhs42CKOOQ4i6DBb6tZ3l4VwsoBoVtDVK7VyBjnELTwcLd2hGbV6ABRf/lrMM4gaGhPs0ORic99Kz7CuuLsENpDNDgT54zQ2JZ1Imwv8ZX8v8EXrWw1ORPnxtDGjnpxdNUIrWrRZk/f5BMuGO1+SJl84wEitKjAyXS74ZQVRcv6WifCohmmif+ZywyiOUH2xBSjvSsDnu7KENJfZiuXIYVJPVofqDE5huMyLOZfyQbnTjwqOsJClOOgcNJopyNRUxSdJqcNwv7pL4+KvVNR+EA42R7Gkx3jpMXouLzQQxiCYvQFNolgoKnZBMGptBUYHWu+mRIKCJ3SGdWiHem8BZKRLEYNMEpdpjhjlbaH0C2hUS0wIuU96MwFkmrEdE/7g21jdN8rqTqE4UJwLDAiFRAG2evxucNLzXSuom5K2CB0TWlUkBGqIXo52y3k4LwSV38pq1qELqlMawGEVY2wmo9QBdEnwfYeHheMa0dYeUI4gDg6Y7BNWk7YDmPz2Q6hZe6mWgJh1SD0QbCSy+CRoKLOLTBKxw4R4ZR6Tup0uVomqkvGjOLKEVaeEQpnAXwRHF86mMYoTyqzgASXQlh4Rtj6GtZn6ZDaiKYWVPcF4VAzzGEeiPQHZqySMvpUocKo3UNTpOmp7pdBqA1HPMucEQ9EVru6FkYMMCpOVik86lrnM6YlEGrDEc+dO2kboQVBewtEisXgjqpghe3S8ZKKpRRRULkxbakyWWbJFoUGQKgjVmLW9VrFcNUpUGGFhNxMniNWnia6L32Buhmn8TaaEgyLYVYw7h1LMZsztWxuHyBswXDRICNPu5AGLKhImxcvlGthhc/PsNlNrDRCdN/q7qcvq9vNw5fjP8NpQ5ua6ydgStBDv9ZDuPv4goUpbBA+oAhZMOqJHWArS2IjrAM0d+Fsq/L/Pq/q4LBMuhqfrGFhMp0pXx6Xj5roNcTtk9e9YDklD0Y9uQFseVY1hprovreK6L5Mt3mNUD8vmDpsIX5RWK4xM9DP0KJ3JuH8cQ8hvW7Q6I3TF77kEHbRfY8G0X35SO3+h5zf2P7cuK0yqzGP0YqU/VRDvZtNf6c//pRHDT244CGXaZQt0qeSwrLQf9NjF3OLoiCciO5LqzD/1mAsMLR1fNFL+WkTgt4WTviEgl7bq3MauGr7+HUdcpkHX6bRCqsd728mjTLONRLC0ei+pA6/+t3/mEY4aqzia5ky6LPiU15FGiGNoPppxRCWPOTyu+cHPG5hHUPVQMZmxelIx6P7FsVv/vonxXr0L3V4xhoh+7U2kbSr7D77KU8rMYRT0X3zTBgKOBmr+hbzHDleQO+Lz8yOqzqupIDwbYOQdqQmCSXWkXbRfR++GET3JQjPT0ldfvlyCqEtwfpbI0MG/6WvM71ikeNEhDT4MkdIhzPTCSWGcDy67y/O2bv3+fBjZFJhh1Dac1UnaGa9jWim7DJIw2eXbFLBIvc2wZf5iNTgx2Px64p1LdRH933yt82bfJzmMi8cJaj5ZogNPJbp7YYwuiGt8O6MD2cOeT/KEFb1sG5qGS25eWEX3bccRPeVln/1BRttg0OEmlmiUXLu4gj/6ZxF4KQLpAQfC7lMWyL5xT58wUYFdXhOt8IOPzzTaCNJ0X2H6xWyDaoZ7/hPdpLgII9AxR7aIa0lDjYrXAo7VBSEcnTfPkF1I2nKZrD/YkBQziPUIQhFthJCzdesCqv4uu0XnCRH91VsoWkcehoVaNgI1ZfTbntuOk0nqX9KLcKJbzsf2E9m197ZEFOCFYcX7hiSkuDdc/LjPekX1qvSOTvjvmHef2Hkw+EAKvKtX/Aae1mhZRCq5XYjrQXBoK3QvDPwrJQQOtWv5hSgMnXnTIwMmXgeTGkhtK9fc4JCysFm9UaG+FZqCG0tMic4IxOvhnhXeggtj+LKT43T9L5LOPo0qBJEaFO/pgQNX3OXoSEhlCRCY4hyI7Q8++azIS5IMFWEhhVsRlCfh4U9HgwJpGQR2hz+5U80qYwl46shLkkwZYQ2h3+n1kXd8zCSwU8pnFJGOFXBkxVnxMfHOfwpQ4IqbYTG5w5VFWfMZi7EZQkmj3CkfscJ2m18z6qGiZ9SaCWPUFu/oxVnzWQGxIUJQkCoqd+RmnPi4b5hqbUjjkAg7EHp3wtdjHzWNQ9zLU0QCkKpggvZnXCf4Iw8HL6zOEE4CAVT5TPfU8cNrbKw/vbyBCEhbCtYPLff26qYXRzr/cqG3WIEQSFsKli4f8ZnE3RJpGhuIViOIDCEVe3jqWHouQlap8PgDQ2JK2gIqcXqNuhx78g4qQbhkgQBItQR9JqH4XZlaw22QiuJBBvzvR9oahOcWqSdvrE1tIAizGqCza0IAbLhaY6eki+E6zKOSC3E/XTVBAMe7tX41xIMqSqT28tDCyJC/ifLhFuCwmjCN0yRwpUQIsJuJBOa4EQW7YxiYYFD2CcYlOFYDkU7rV9YYBA29we17j6nfWDNlyKL9j6lVAhCQdjdkvhNn2BAhsM8pFsj0yAIBeHgxuBsWL2Kl3yox7CzIxGCQBDSOrumDiSo54iqG+o31TvA5rtx1snJbgLSIAgDISP4EXVjytzw3DQusMZbneclN5LJ0FlHCgKAkLuq2TbuWd89Z351K2lAo4To+Sr5RQ/h9uELr+m7CgBCXnPbzsPudes/SWiDKl6eCycBpO5FX05/J4JSR0g9Qr+mDrC4h13WkV4fP60Uo5fADAd+qy4fvEyiL00cIfUIzd0icw+7NcJnymWTwG66ygFC7EinxTxCXx+fNB3pZYNQN4Lpv+qxeNTj9o9+UDJXxtRFPCI0EvMITfrNIULdN3oQ/RXv7qfUEx7pDq6//YJYUPumTEFpI2QeoZlz6x7CkS5Sesdf8W43xIr3PyDDGPaD4q62vaU+R4kjZL4fT8ohwrHrnLBe49US5kyNd+t4LTTW1WkzEpQQPmVvTkH0u0JTXrHFIREhjkinVXuEJvSYR2+pFVLpIU3tuLuovCQNkUVKaRB6Td5VaSNsPEI/ZQukh1vWDraSY0wdJ9/r3befku7g7YMXZGZDL4ZvT8pLXJ0xEfcIff3d0bVJFSvvWxbU43b5ljr2z/kygxzLbkGljbDxCP0P06vLHa922dQrQ+Zxux7QcII89MbyShth5xF6AiCXCE21ieHBM6iRHXGVNsLWI7Q+Iq5Ow40o+zSG8pGGbyWOsJNlC1Jt4XtpQaF9/NoLDEJXtQxHR0SQtXqEVT3v6G0zLG2TR60d4Tkb+Wdf8MXyrRBCeGnLvGndCO/O8nryRmZzT99vciHsx03+bOLbQLRuhGRawhCWFYuWKLTCd2c5IoQhjrAqOUIxftLOMJpn8toLhHTD/bdrhNucrXEiQjCiCAmskq9OXz74zgkPKIgIwYggpAdw2CZjG9GT/UWEQEQQ7o5P5WshC+mJCKGIILzJT5sRqYCwukaEMMQQElYSQnZzDbZCICIIbzdP3pSVgJAew6mwI4UiOiK9yo+q6pIewWHDGcaxwlYIRFdsa53+/aMNnUpsWZBrSvBcOoEDWStHKGmN2xTVXiFMccfdh/YIYYo77j60VwjXKUQIXogQvBAheCFC8EKE4IUIwQsRghciBC9ECF6IELwQIXghQvBChOCFCMELEYIXIgQvRAheiBC8ECF4IULwQoTghQjBCxGCFyIEL0QIXogQvBAheCFC8EKE4IUIwQsRghciBC9ECF6IELwQIXghQvBChOCFCMELEYIXIgQvRAheiBC8ECF4IULwQoTghQjBCxGCFyIEL0QIXogQvBAheCFC8EKE4IUIwQsRghciBC9ECF6IELwQIXghQvBChOCFCMELEYIXIgQvRAheiBC8ECF4IULwQoTghQjBCxGCFyIEL0QIXogQvBAheCFC8EKE4IUIwQsRghciBC9ECF6IELwQIXghQvD6f/dniyHHtceXAAAAAElFTkSuQmCC" alt /></p>
+</div>
+</div>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -11,7 +11,7 @@ minmod_model(bm, index = NULL, overlap_gene = NULL)
 
 \item{index}{integer. Specifying rule of which gene to modify. If NULL, modifies all rules in the model. Defaults to NULL.}
 
-\item{overlap_gene}{character vector. Specify which genes are present in both model and data inputs. Only needed when index=NULL.}
+\item{overlap_gene}{character vector. Specify which genes are present in both model and data inputs.}
 }
 \description{
 This function generates all possible boolean models minimally modified. Returns a lists of 2 lists, deleted models and added models

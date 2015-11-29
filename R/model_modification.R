@@ -5,7 +5,9 @@
 #' 
 #' @param bm S4 BoolModel object.
 #' @param index integer. Specifying rule of which gene to modify. If NULL, modifies all rules in the model. Defaults to NULL.
-#' @param overlap_gene character vector. Specify which genes are present in both model and data inputs. Only needed when index=NULL.
+#' @param overlap_gene character vector. Specify which genes are present in both model and data inputs.
+#' 
+#' @export
 minmod_model = function(bm, index=NULL, overlap_gene=NULL)
 {
   if(is.null(index))
@@ -46,6 +48,8 @@ minmod_model = function(bm, index=NULL, overlap_gene=NULL)
 #' @param index integer. Specifying rule of which gene to modify.
 minmod_internal = function(bm, index)
 {
+  and_bool = check_and(bm)
+  
   arule = bm@rule_act[[index]]
   irule = bm@rule_inh[[index]]
   
@@ -75,6 +79,7 @@ minmod_internal = function(bm, index)
       }
     }
   }
+  dellist_arule[sapply(dellist_arule, length)==0] = list('0') #if there is any empty term at the end, add in '0'
 
   #Deletion of inh rule.
   dellist_irule = list()
@@ -102,38 +107,45 @@ minmod_internal = function(bm, index)
       }
     }
   }
+  dellist_irule[sapply(dellist_irule, length)==0] = list('0') #if there is any empty term at the end, add in '0'
   
   #Addition of act rule. (single)
   pos_actterm = bm@target_var[!bm@target_var %in% unlist(strsplit(c(arule, irule), '&'))]
-  addlist_arule = list()
-  if(arule[1] == '0')
+  if(length(pos_actterm) != 0)
   {
-    for(i in 1:length(pos_actterm))
+    addlist_arule = list()
+    if(arule[1] == '0')
     {
-      addlist_arule = c(addlist_arule, list(pos_actterm[i]))
-    }
-  } else
-  {
-    for(i in 1:length(pos_actterm))
-    {
-      addlist_arule = c(addlist_arule, list(c(arule, pos_actterm[i])))
-    }
-  }
-  
-  #Addition of act rule. (double)
-  if(arule[1] != '0')
-  {
-    for(i in 1:length(pos_actterm))
-    {
-      for(j in 1:length(arule))
+      for(i in 1:length(pos_actterm))
       {
-        if(grepl('&', arule[j]))
+        addlist_arule = c(addlist_arule, list(pos_actterm[i]))
+      }
+    } else
+    {
+      for(i in 1:length(pos_actterm))
+      {
+        addlist_arule = c(addlist_arule, list(c(arule, pos_actterm[i])))
+      }
+    }
+    
+    if(and_bool)
+    {
+      #Addition of act rule. (double)
+      if(arule[1] != '0')
+      {
+        for(i in 1:length(pos_actterm))
         {
-          next
-        } else
-        {
-          tmp = sprintf('%s&%s', pos_actterm[i], arule[j])
-          addlist_arule = c(addlist_arule, list(c(arule[-j], tmp)))
+          for(j in 1:length(arule))
+          {
+            if(grepl('&', arule[j]))
+            {
+              next
+            } else
+            {
+              tmp = sprintf('%s&%s', pos_actterm[i], arule[j])
+              addlist_arule = c(addlist_arule, list(c(arule[-j], tmp)))
+            }
+          }
         }
       }
     }
@@ -141,35 +153,42 @@ minmod_internal = function(bm, index)
   
   #Addition of inh rule. (single)
   pos_inhterm = bm@target_var[!bm@target_var %in% unlist(strsplit(c(arule, irule), '&'))]
-  addlist_irule = list()
-  if(irule[1] == '0')
+  #pos_inhterm = pos_inhterm[!is.na(pos_inhterm)]
+  if(length(pos_inhterm)!=0)
   {
-    for(i in 1:length(pos_inhterm))
+    addlist_irule = list()
+    if(irule[1] == '0')
     {
-      addlist_irule = c(addlist_irule, list(pos_inhterm[i]))
-    }
-  } else
-  {
-    for(i in 1:length(pos_inhterm))
-    {
-      addlist_irule = c(addlist_irule, list(c(irule, pos_inhterm[i])))
-    }
-  }
-  
-  #Addition of inh rule. (double)
-  if(irule[1] != '0')
-  {
-    for(i in 1:length(pos_inhterm))
-    {
-      for(j in 1:length(irule))
+      for(i in 1:length(pos_inhterm))
       {
-        if(grepl('&', irule[j]))
+        addlist_irule = c(addlist_irule, list(pos_inhterm[i]))
+      }
+    } else
+    {
+      for(i in 1:length(pos_inhterm))
+      {
+        addlist_irule = c(addlist_irule, list(c(irule, pos_inhterm[i])))
+      }
+    }
+    
+    if(and_bool)
+    {
+      #Addition of inh rule. (double)
+      if(irule[1] != '0')
+      {
+        for(i in 1:length(pos_inhterm))
         {
-          next
-        } else
-        {
-          tmp = sprintf('%s&%s', pos_inhterm[i], irule[j])
-          addlist_irule = c(addlist_irule, list(c(irule[-j], tmp)))
+          for(j in 1:length(irule))
+          {
+            if(grepl('&', irule[j]))
+            {
+              next
+            } else
+            {
+              tmp = sprintf('%s&%s', pos_inhterm[i], irule[j])
+              addlist_irule = c(addlist_irule, list(c(irule[-j], tmp)))
+            }
+          }
         }
       }
     }
@@ -226,14 +245,19 @@ minmod_internal = function(bm, index)
 #' @title Add extra genes to a Boolean model
 #' 
 #' @description
-#' This function adds extra genes to a Boolean model. Input model must be in data frame format, output model will be BoolModel object.
+#' This function adds extra genes to a Boolean model. Return a list of BoolModel object and an initial state.
 #' 
-#' @param in_model data frame with 2 columns, which are targets and factors
 #' @param in_gene character vector. Genes to be added into the model.
+#' @param in_model data frame or BoolModel object. If it is a data frame, it must have 2 columns, which are targets and update functions.
 #' 
 #' @export
-grow_bmodel = function(in_model, in_gene)
+grow_bmodel = function(in_gene, in_model)
 {
+  if(class(in_model)=='BoolModel')
+  {
+    in_model = bm_to_df(in_model)
+  }
+  
   #Generate a new data frame to be added into the model df.
   empty_func = '(0) &! (0)'
   in_row = data.frame(in_gene, empty_func)

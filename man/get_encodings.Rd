@@ -4,12 +4,10 @@
 \alias{get_encodings}
 \title{Get corresponding encodings for compression or decompression.}
 \usage{
-get_encodings(bmodel, inter_bool)
+get_encodings(bmodel)
 }
 \arguments{
 \item{bmodel}{S4 BoolModel object.}
-
-\item{inter_bool}{logical. Indicate whether to consider AND terms.}
 }
 \description{
 This function gets all possible terms (single or double terms) and their corresponding encodings.

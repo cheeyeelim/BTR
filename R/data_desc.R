@@ -31,24 +31,6 @@ NULL
 #' @usage data(bon_istate)
 NULL
 
-#' @title Initial state from Moignard et al.
-#' 
-#' @description
-#' An intial state obtained from data in Moignard et al, determined by taking colMeans over unique rows, and rounding the means to 0-1. 
-#' Values for genes that are missing in Moignard et al, but are present in Bonzanni et al, are determined by taking values from the original initial state supplied in Bonzanni et al.
-#' It contains a set of Boolean values for 20 genes.
-#' 
-#' @format
-#' A data frame with 1 row and 20 columns. 
-#' 
-#' Rows: each row consists of 1 set of Boolean state.
-#' Columns: each column is for 1 gene/variable.
-#' 
-#' @docType data
-#' @name bon_moig_istate
-#' @usage data(bon_moig_istate)
-NULL
-
 #' @title Myeloid Boolean Model from Krumsiek et al.
 #' 
 #' @description
@@ -82,47 +64,47 @@ NULL
 #' @usage data(krum_istate)
 NULL
 
-#' @title Raw single cell qRT-PCR expression data from Moignard et al.
+#' @title Raw single cell qRT-PCR expression data from Wilson et al.
 #' 
 #' @description
 #' A raw single cell expression data obtained from multiple cell types.
 #' 
 #' @format
-#' A data frame with 597 rows and 18 columns. 
+#' A data frame with 1626 rows and 44 columns. 
 #' 
 #' Rows: each row consists of raw expression values from 1 cell.
 #' Columns: each column is for 1 gene/variable.
 #' 
 #' @docType data
-#' @name moig_raw_data
-#' @usage data(moig_raw_data)
+#' @name wilson_raw_data
+#' @usage data(wilson_raw_data)
 NULL
 
-#' @title Discretised single cell qRT-PCR expression data from Moignard et al.
+#' @title Raw single cell RNAseq expression data from Wilson et al.
 #' 
 #' @description
-#' A discretised single cell expression data obtained from multiple cell types.
+#' A raw single cell expression data obtained from multiple cell types.
 #' 
 #' @format
-#' A data frame with 597 rows and 18 columns. 
+#' A data frame with 96 rows and 38498 columns. 
 #' 
-#' Rows: each row consists of discretised expression values from 1 cell.
+#' Rows: each row consists of raw expression values from 1 cell.
 #' Columns: each column is for 1 gene/variable.
 #' 
 #' @docType data
-#' @name moig_data
-#' @usage data(moig_data)
+#' @name wilson_raw_rnaseq
+#' @usage data(wilson_raw_rnaseq)
 NULL
 
-#' @title Estimated parameters from Wilson et al. data
+#' @title Example Boolean Models used in the vignette
 #' 
 #' @description
-#' A list of parameters (based on log normal distribution) estimated from Wilson et al. single-cell qPCR expression data.
+#' 3 Boolean models used in the examples of the vignette.
 #' 
 #' @format
-#' A list with 4 numeric vectors, all_mu1, all_mu2, all_sig1, all_sig2. Note that each element in the vector is estimated from a single gene.
+#' Each Boolean model is a BoolModel object.
 #' 
 #' @docType data
-#' @name real_param
-#' @usage data(real_param)
+#' @name example_models
+#' @usage data(example_models)
 NULL

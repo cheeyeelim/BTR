@@ -2,20 +2,18 @@
 % Please edit documentation in R/search.R
 \name{model_consensus}
 \alias{model_consensus}
-\title{Intersection of input genes}
+\title{Intersection of genes}
 \usage{
-model_consensus(bmodel_list, inter_bool, max_varperrule, format = "vec")
+model_consensus(bmodel_list, max_varperrule, format = "vec")
 }
 \arguments{
 \item{bmodel_list}{list of BoolModel.}
-
-\item{inter_bool}{logical. Indicate whether to consider AND terms.}
 
 \item{max_varperrule}{integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.}
 
 \item{format}{character. Specifies which format to return. Possible values: 'vec', 'df'. Default to 'vec'.}
 }
 \description{
-This function finds the intersection of input genes and provide a score for them. Return a consensus model or a vector of scores.
+This function finds the intersection of genes and provide a score for them. Return a consensus model or a vector of scores.
 }
 

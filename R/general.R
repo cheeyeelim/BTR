@@ -15,6 +15,27 @@ vcat = function(string, bool)
   invisible()
 }
 
+#' @title Check if containing AND terms
+#' 
+#' @description
+#' This function checks if a particular Boolean model contains AND terms.
+#' 
+#' @param bmodel BoolModel object.
+check_and = function(bmodel)
+{
+  and_bool = F
+  
+  if(any(grepl('&', bmodel@rule_act)))
+  {
+    and_bool = T
+  } else if(any(grepl('&', bmodel@rule_inh)))
+  {
+    and_bool = T
+  }
+  
+  return(and_bool)
+}
+
 #' @title Extract Boolean terms
 #' 
 #' @description
@@ -99,26 +120,6 @@ match_term = function(t1, t2, mode='logic')
   }
 }
 
-#' @title Check for matching states
-#' 
-#' @description
-#' This function finds a match between two df of states. Returns a row index vector indicating for each row of mstate, what is the corresponding row in xstate. If a match cannot be found, a 0 will be return.
-#' Only columns that are present in both df will be used in comparison. Note that the row index starts from 1 (as in R), not from 0 (as in cpp).
-#' 
-#' @param mstate data frame. It should be a state(row) x gene(column) df. colnames will be used in comparison.
-#' @param xstate data frame. It should be a state(row) x gene(column) df. colnames will be used in comparison.
-match_state = function(mstate, xstate)
-{
-  #Filtering the columns in mstate and xstate.
-  same_col = intersect(colnames(mstate), colnames(xstate))
-  fmstate = mstate[, same_col]
-  fxstate = xstate[, same_col]
-  
-  ind = match_state_loop(as.matrix(fmstate), as.matrix(fxstate))
-  
-  return(ind) #zeroes are present due to mismatching in cpp code.
-}
-
 #' @title Pick a random minimum value
 #' 
 #' @description
@@ -167,191 +168,6 @@ filter_dflist = function(x, y, uniq_bool=T)
   }
 }
 
-#' @title Check if the Boolean model violates constraints.
-#' 
-#' @description
-#' This function checks if the Boolean model violates contraints. Return logical value.
-#' (1) Each gene rule should not have more terms than max_varperrule.
-#' (2) The same term should not occur twice in the same rule.
-#' 
-#' @param bmodel S4 BoolModel object.
-#' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
-#' 
-#' @export
-check_bmodel = function(bmodel, max_varperrule)
-{
-  check_bool = F
-  
-  act_rule = lapply(bmodel@rule_act, function(x) unlist(strsplit(x, '&')))
-  inh_rule = lapply(bmodel@rule_inh, function(x) unlist(strsplit(x, '&')))
-  
-  #(1) Check 1 : The same term should not occur twice in the same rule.
-  check_bool = check_bool | any(sapply(act_rule, function(x) any(duplicated(x))))
-  check_bool = check_bool | any(sapply(inh_rule, function(x) any(duplicated(x))))
-  
-  #(2) Check 2 : Each gene rule should not have more terms than max_varperrule.
-  act_rule = sapply(act_rule, function(x) unique(x))
-  act_rule = sapply(act_rule, function(x) x[!(x %in% '0')]) #remove zeroes.
-  
-  inh_rule = sapply(inh_rule, function(x) unique(x))
-  inh_rule = sapply(inh_rule, function(x) x[!(x %in% '0')]) #remove zeroes.
-  
-  check_bool = check_bool | any(sapply(act_rule, function(x) length(x)>max_varperrule))
-  check_bool = check_bool | any(sapply(inh_rule, function(x) length(x)>max_varperrule))
-  
-  if(check_bool)
-  {
-    return(FALSE)
-  } else
-  {
-    return(TRUE)
-  }
-}
-
-#' @title Obtain parameters for bimodal distribution from real data
-#' 
-#' @description
-#' This function obtains parameters for bimodal distribution. Returns 4 parameters: mu1, mu2, sig1, sig2.
-#' 
-#' @param x matrix. Input expression data. Col-genes, row-samples.
-#' @param data_type character. Specify data types: qpcr, rnaseq.
-#' 
-#' @export
-param_bimodal = function(x, data_type='qpcr')
-{
-  require(MASS)
-  
-  #(1) Initialise data.
-  tmp = initialise_raw_data(x, data_type)
-  x_con = tmp[[1]] #continuous
-  x_bin = tmp[[2]] #discrete
-  
-  #rescale the data to remove zeroes.
-  x_con = x_con + 0.0001
-  
-  all_mu1 = c()
-  all_mu2 = c()
-  all_sig1 = c()
-  all_sig2 = c()
-  for(i in 1:ncol(x_bin))
-  {
-    #(2) Extract the parameters for the two modal distributions. 
-    #First modal - low expression, 0s. Second modal - high expression, 1s.
-    x_lowmode = x_con[x_bin[,i]!=1, i]
-    x_highmode = x_con[x_bin[,i]==1, i]
-
-    #(3) Estimate parameters
-    param1 = MASS::fitdistr(x_lowmode, 'lognormal')
-    param2 = MASS::fitdistr(x_highmode, 'lognormal')
-    
-    #For checking.
-    #hist(rlnorm(1000, param1$estimate[1], param1$estimate[2]))
-    #hist(rlnorm(1000, param2$estimate[1], param2$estimate[2]))
-    
-    all_mu1 = c(all_mu1, param1$estimate[1])
-    all_mu2 = c(all_mu2, param2$estimate[1])
-    all_sig1 = c(all_sig1, param1$estimate[2])
-    all_sig2 = c(all_sig2, param2$estimate[2])
-  }
-  
-  return(list(all_mu1=all_mu1, all_mu2=all_mu2, all_sig1=all_sig1, all_sig2=all_sig2))
-}
-
-
-#' @title Generate random real numbers from binary values
-#' 
-#' @description
-#' This function generates random real numbers from binary values, with supplied parameters. Returns a vector of real values.
-#' 
-#' @param x logical or 0/1 numeric matrix. Col-genes, row-samples.
-#' @param param list of parameters given by param_bimodal().
-#' 
-#' @export
-bin_to_real = function(x, param)
-{ 
-  require(MASS)
-  
-  #(1) Convert logical to numeric.
-  x = x + 0
-  
-  #(2) Estimate the distribution for the parameters.
-  mu1_dist = MASS::fitdistr(-param$all_mu1, 'lognormal')
-  mu2_dist = MASS::fitdistr(-param$all_mu2, 'lognormal')
-  sig1_dist = MASS::fitdistr(param$all_sig1, 'lognormal')
-  sig2_dist = MASS::fitdistr(param$all_sig2, 'lognormal')
-  
-  y = matrix(NA, ncol=ncol(x), nrow=nrow(x))
-  for(i in 1:ncol(x))
-  {
-    #(3) Generating random values from the distribution.
-    mu1_est = -rlnorm(1, mu1_dist$estimate[1], mu1_dist$estimate[2])
-    mu2_est = -rlnorm(1, mu2_dist$estimate[1], mu2_dist$estimate[2])
-    sig1_est = rlnorm(1, sig1_dist$estimate[1], sig1_dist$estimate[2])
-    sig2_est = rlnorm(1, sig2_dist$estimate[1], sig2_dist$estimate[2])
-    
-    #(4) For each gene, generate random expression values using the obtained random parameters.
-    for(j in 1:nrow(x))
-    {
-      if(x[j,i]==0)
-      {
-        y[j,i] = rlnorm(1, mu1_est, sig1_est)
-        
-        if(y[j,i] > 1)
-        {
-          y[j,i] = 1
-        } else if(y[j,i] < 0)
-        {
-          stop('Error in generating continuous values.')
-        }
-      } else
-      {
-        y[j,i] = rlnorm(1, mu2_est, sig2_est)
-        
-        if(y[j,i] > 1)
-        {
-          y[j,i] = 1
-        } else if(y[j,i] < 0)
-        {
-          stop('Error in generating continuous values.')
-        }
-      }
-    }
-  }
-  
-  return(y)
-}
-
-#' @title Check for equivalent models
-#' 
-#' @description
-#' This function checks if the two models have the same rules. Return a logical value. Only TRUE if each rule for each gene is the same.
-#' 
-#' @param bmodel1 S4 BoolModel object.
-#' @param bmodel2 S4 BoolModel object.
-#' @param inter_bool logical. Indicate whether to consider AND terms.
-#' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
-#' 
-#' @export
-equi_model = function(bmodel1, bmodel2, inter_bool, max_varperrule)
-{
-  stopifnot(length(bmodel1@target)==length(bmodel2@target))
-  stopifnot(get_encodings(bmodel1, inter_bool)==get_encodings(bmodel2, inter_bool))
-  
-  ind = get_encodings(bmodel1, inter_bool)
-  
-  dist = model_dist(bmodel1, bmodel2, inter_bool, max_varperrule)
-  
-  if(dist==0)
-  {
-    match = T
-  } else
-  {
-    match = F
-  }
-  
-  return(match)
-}
-
 #' @title Calculate distance between Boolean models
 #' 
 #' @description
@@ -359,13 +175,12 @@ equi_model = function(bmodel1, bmodel2, inter_bool, max_varperrule)
 #' 
 #' @param x S4 BoolModel object. Test model.
 #' @param y S4 BoolModel object. Reference model.
-#' @param inter_bool logical. Indicate whether to consider AND terms.
 #' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
 #' 
 #' @export
-model_dist = function(x, y, inter_bool, max_varperrule)
+model_dist = function(x, y, max_varperrule)
 {
-  set_diff = unlist(model_setdiff(x, y, inter_bool, max_varperrule))
+  set_diff = unlist(model_setdiff(x, y, max_varperrule))
   
   #Calculate total dist.
   t_dist = length(set_diff)
@@ -381,17 +196,16 @@ model_dist = function(x, y, inter_bool, max_varperrule)
 #' 
 #' @param x S4 BoolModel object. Test model.
 #' @param y S4 BoolModel object. Reference model.
-#' @param inter_bool logical. Indicate whether to consider AND terms.
 #' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
 #' @param directed logical. If TRUE, return the difference in terms with respect to x.
 #' 
 #' @export
-model_setdiff = function(x, y, inter_bool, max_varperrule, directed=F)
+model_setdiff = function(x, y, max_varperrule, directed=F)
 {
   stopifnot(length(x@target) == length(y@target))
-  stopifnot(get_encodings(x, inter_bool)==get_encodings(y, inter_bool))
+  stopifnot(get_encodings(x)==get_encodings(y))
   
-  ind = get_encodings(x, inter_bool)
+  ind = get_encodings(x)
   
   x1 = compress_bmodel(x, ind, max_varperrule)
   x2 = compress_bmodel(y, ind, max_varperrule)

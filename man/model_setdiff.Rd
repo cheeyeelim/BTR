@@ -4,14 +4,12 @@
 \alias{model_setdiff}
 \title{Find the set difference between two Boolean models}
 \usage{
-model_setdiff(x, y, inter_bool, max_varperrule, directed = F)
+model_setdiff(x, y, max_varperrule, directed = F)
 }
 \arguments{
 \item{x}{S4 BoolModel object. Test model.}
 
 \item{y}{S4 BoolModel object. Reference model.}
-
-\item{inter_bool}{logical. Indicate whether to consider AND terms.}
 
 \item{max_varperrule}{integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.}
 

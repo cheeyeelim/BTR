@@ -4,7 +4,7 @@
 \alias{gen_randata_bn}
 \title{Generate sets of random data}
 \usage{
-gen_randata_bn(n, steps, num_genes, max_varperrule, inter_bool)
+gen_randata_bn(n, steps, num_genes, max_varperrule)
 }
 \arguments{
 \item{n}{integer. Number of sets of random data required.}
@@ -14,8 +14,6 @@ gen_randata_bn(n, steps, num_genes, max_varperrule, inter_bool)
 \item{num_genes}{integer. Number of genes in the Boolean models.}
 
 \item{max_varperrule}{integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.}
-
-\item{inter_bool}{logical. Indicate whether to consider AND terms.}
 }
 \description{
 (Requires bnlearn) This function generates specified sets of random data, which include initial states, two Boolean models (starting and destination), and continuous+discrete data of the destination model.

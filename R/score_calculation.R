@@ -71,8 +71,7 @@ m_score = function(x, bmodel, max_varperrule, detail=F)
 calc_mscore = function(bmodel, istate, fcdata, overlap_gene, max_varperrule, detail=F)
 { 
   #(1) Simulate each of these models.
-  tmp = simulate_model(bmodel, istate)
-  mdata = tmp
+  mdata = simulate_model(bmodel, istate)
 
   #(2) Perform gene filtering on model state space.
   fmdata = filter_dflist(mdata, overlap_gene)
@@ -84,13 +83,67 @@ calc_mscore = function(bmodel, istate, fcdata, overlap_gene, max_varperrule, det
   }
   
   #(3) Score each model state wrt to data state.
-  #return pairwise scores between each model and data states.
-  score_matrix = rcpp_man_dist(fmdata, fcdata) #The first must be the model state. This returns a matrix of row=data, col=model.
-  #score_matrix = rcpp_ham_dist(fmdata, fcdata)
+  score_matrix = man_dist(fcdata, fmdata) #The first must be the data state. This returns a matrix of row=data, col=model.
   
-  final_score = m_score(score_matrix, bmodel, max_varperrule, detail=detail) #return a matrix (1x2) of two model scores, penalised score & unpenalised score. the lower the better.
+  #(4) Calculate score for distance between states
+  y = mean(apply(score_matrix, 2, min)) #best
   
-  return(final_score)
+  #(5) Calculate penalty term
+  #(A) To penalise having too low or too high number of model states, when compared to the number of data states.
+  #Ideally, the number of model states >= the number of data states.
+  #abs(number of model states - number of data states)
+  za = abs(ncol(score_matrix) - nrow(score_matrix)) / (nrow(score_matrix) * length(bmodel@target)) #best
+  
+  #(B) To penalise having too many variables in the rules.
+  var_len = list() #combine act and inh rules for each variable.
+  for(i in 1:length(bmodel@target))
+  {
+    var_len = c(var_len, list(c(bmodel@rule_act[[i]], bmodel@rule_inh[[i]])))
+  }
+  
+  #calculate number and fraction of each variable.
+  var_len = sapply(var_len, function(x) x[!grepl('0', x)]) #to remove '0'
+  num_var = sapply(var_len, function(x) length(strsplit(paste(x, collapse=''), 'v')[[1]])-1 ) #to count the number of v[0-9]s terms. e.g. v1s&v2s will be counted as 2 terms.
+  num_var[num_var<0] = 0 #if the rule for the variable is completely empty, has to set the negative values to 0.
+  
+  frac_var = (num_var-max_varperrule)
+  zb_ind = num_var > max_varperrule
+  zb = sum(frac_var[zb_ind])
+  
+  #(6 Calculate final score.
+  #Specify the constants for each penalty term.
+  a = 1
+  b = 1
+  
+  f = y + a*za + b*zb #f ranges from 0 to infinity.
+  
+  if(detail)
+  {
+    output = c(f, y, za, zb)
+    names(output) = c('f', 'y', 'za', 'zb')
+  } else
+  {
+    output = c(f)
+    names(output) = c('f')
+  }
+  
+  return(output)
+}
+
+#' @title Calculates pairwise Manhattan distances between two matrices
+#' 
+#' @description
+#' This function calculates pairwise Manhattan distances between two matrices.
+#' 
+#' @param x matrix
+#' @param y matrix
+man_dist = function(x, y)
+{
+  z = matrix(0, nrow = nrow(x), ncol = nrow(y))
+  for (k in 1:nrow(y)) {
+    z[, k] <- colSums(abs(t(x) - y[k, ]))
+  }
+  return(z)
 }
 
 #' @title Calculate true positive, true negative, false positive and false negative

@@ -4,7 +4,7 @@
 \alias{gen_randata}
 \title{Generate sets of random data}
 \usage{
-gen_randata(n, steps, num_genes, max_varperrule, inter_bool)
+gen_randata(n, steps, num_genes, max_varperrule, and_bool)
 }
 \arguments{
 \item{n}{integer. Number of sets of random data required.}
@@ -15,7 +15,7 @@ gen_randata(n, steps, num_genes, max_varperrule, inter_bool)
 
 \item{max_varperrule}{integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.}
 
-\item{inter_bool}{logical. Indicate whether to consider AND terms.}
+\item{and_bool}{logical. Indicate whether to consider AND terms.}
 }
 \description{
 This function generates specified sets of random data, which include initial states, two Boolean models (starting and destination), and continuous+discrete data of the destination model.

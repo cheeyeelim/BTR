@@ -1,45 +1,63 @@
-#' @title Training Model
+#' @title Training Model (using simulated annealing)
 #' 
 #' @description
 #' This function performs model training to find the best model, using information from data. It requires an initial state supplied to perform the search, and an initial model can also be supplied to be included in the initial population.
 #' Note that if a model is supplied, and the genes in the model is different from the genes in the data, only the genes overlapping between model and data will be retained for further analysis.
 #' 
-#' @param bmodel Boolean model in data frame. If NULL, use a random Boolean model. Default to NULL.
-#' @param edata list of 2 data frames. Initialised continuous and discretised expression data. Each data frame should have state(row) x gene(column).
-#' @param istate data frame. Must have only 1 row, which represents 1 initial state.
-#' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
-#' @param tol numeric. Specify the tolerance in ending condition. Default to 1e-6. It cannot be lower than .Machine$double.eps ^ 0.5.
-#' @param inter_bool logical. Indicate whether to consider AND terms. Default to TRUE.
-#' @param verbose logical. Specifies whether to give detailed output. Default to F.
-#' @param self_loop logical. Indicates whether to allow self_loop in random starting model. Only used if is.null(bmodel). Default to F.
+#' @param edata data frame of expression data. Should have state(row) x gene(column).
+#' @param bmodel Boolean model in data frame. If NULL, use a random Boolean model. Defaults to NULL.
+#' @param istate data frame. Must have only 1 row, which represents 1 initial state. Defaults to NULL.
+#' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must be higher than number of genes. Defaults to 6.
+#' @param and_bool logical. Whether to consider AND terms. IF bmodel is not NULL, defaults to whether AND interaction is included in bmodel. If bmodel is NULL, then defaults to TRUE.
+#' @param self_loop logical. Whether to allow self_loop in random starting model. Only used if is.null(bmodel). Default to F.
+#' @param restart integer. Number of restart from the best solution. Defaults to 0.
+#' @param verbose logical. Whether to give detailed output to the screen. Defaults to F.
 #' 
 #' @export
-model_train = function(bmodel=NULL, edata, istate, max_varperrule=6, tol=1e-6, inter_bool, verbose=F, self_loop=F)
+model_train_sa = function(edata, bmodel=NULL, istate=NULL, max_varperrule=6, and_bool=T, self_loop=F, restart=0, verbose=F)
 {
+  ##################Implement restart##########################
+  
   vcat('Preparing data for analysis.\n', verbose)
   
-  if(class(edata)!='list' | length(edata)!=2)
-  {
-    stop('edata: Supply two expression data frames in a list.')
-  }
-  
-  #Initialise input data.
-  istate = initialise_data(istate, aslogic=T)
-  cdata = initialise_data(edata[[1]])
-  ddata = initialise_data(edata[[2]])
+  #Initialise expression data.
+  tmp_data = initialise_raw_data(edata) #returns a list of two data frames.
+  cdata = initialise_data(tmp_data[[1]]) #continuous data
+  ddata = initialise_data(tmp_data[[2]]) #discretised data
   
   #Initialise model.
   if(is.null(bmodel))
   {
-    bmodel = gen_one_rmodel(colnames(istate), max_varperrule, inter_bool, self_loop)
-  } else if(class(bmodel) != 'BoolModel')
+    bmodel = gen_one_rmodel(colnames(edata), max_varperrule, and_bool, self_loop)
+  } else
   {
-    bmodel = initialise_model(bmodel)
+    if(class(bmodel) != 'BoolModel')
+    {
+      bmodel = initialise_model(bmodel)
+    }
+    
+    if(check_and(bmodel) != and_bool)
+    {
+      and_bool = check_and(bmodel)
+    }
   }
   
+  #Initialise initial state.
+  if(is.null(istate))
+  {
+    istate = rbinom(length(bmodel@target), 1, 0.5)
+    #Getting a random initial state.
+    while(mean(istate) > 0.9 | mean(istate) < 0.1) #do not want initial state that is too homogenous.
+    {
+      istate = rbinom(length(bmodel@target), 1, 0.5)
+    }
+    istate = data.frame(matrix(istate, nrow=1))
+    colnames(istate) = bmodel@target
+  }
+  istate = initialise_data(istate, aslogic=T)
+  
   #Filtering expression data.
-  stopifnot(colnames(edata[[1]])==colnames(edata[[2]]))
-  overlap_gene = intersect(colnames(edata[[1]]), y=bmodel@target)
+  overlap_gene = intersect(colnames(cdata), y=bmodel@target)
   nonoverlap_gene = bmodel@target[!(bmodel@target %in% overlap_gene)]
   names(overlap_gene) = bmodel@target_var[bmodel@target %in% overlap_gene]
   names(nonoverlap_gene) = bmodel@target_var[!(bmodel@target %in% overlap_gene)]
@@ -52,6 +70,161 @@ model_train = function(bmodel=NULL, edata, istate, max_varperrule=6, tol=1e-6, i
   
   vcat('Start training.\n', verbose)
 
+  #(3) Calling final combined search.
+  cur_score = NA
+  cur_model = bmodel
+  cur_step = 1
+  cur_temp = 1
+  min_temp = 0.00001
+  alpha = 0.9
+  max_ite = 100 #iterations in same step.
+  while(cur_temp > min_temp)
+  {
+    vcat(sprintf('Current iteration: %s.\n', cur_step), verbose)
+    
+    vcat('Stage 1: Exploring neighbouring models.\n', verbose)
+    mod_model = unlist(minmod_model(cur_model, overlap_gene=overlap_gene))
+    vcat(sprintf('Total neighbouring models: %s.\n', length(mod_model)), verbose)
+
+    vcat('Stage 2: Evaluating next model.\n', verbose)
+    cur_ite = 1
+    while(cur_ite <= max_ite)
+    {
+      model_ind = sample(1:length(mod_model), 1)
+      next_model = mod_model[[model_ind]]
+      mod_model = mod_model[-model_ind]
+      
+      #print(printBM(next_model)) #debug
+      
+      next_score = calc_mscore(bmodel=next_model, istate=istate, fcdata=fcdata, overlap_gene=overlap_gene, max_varperrule=max_varperrule)
+      
+      #Breaking conditions.
+      if(length(mod_model) == 0)
+      {
+        cur_score = next_score
+        cur_model = next_model
+        
+        if(cur_score < best_score) #store best solution ever, regardless of the final ending point.
+        {
+          best_score = next_score
+          best_model = next_model
+        }
+        break
+      }
+      
+      if(is.na(cur_score))
+      {
+        #For first iteration.
+        cur_score = next_score
+        cur_model = next_model
+        
+        best_score = next_score
+        best_model = next_model
+      } else
+      {
+        #For subsequent iteration.
+        accept_prob = exp((cur_score - next_score)/cur_temp) #if next solution is better than current solution, accept_prob always more than 1.
+        
+        if(accept_prob > runif(1)) #move forward if the prob is more than a random number between 0-1.
+        {
+          cur_score = next_score
+          cur_model = next_model
+          
+          #writeBM(cur_model, 'tmp_model.csv') #debug
+          
+          if(cur_score < best_score) #store best solution ever, regardless of the final ending point.
+          {
+            best_score = next_score
+            best_model = next_model
+          }
+        }
+      }
+      cur_ite = cur_ite + 1
+    }
+    
+    cur_temp = cur_temp*alpha #Reduce subsequent temperature.
+    cur_step = cur_step + 1
+  }
+  vcat(sprintf('Final iteration: %s.\n', cur_step), verbose)
+  
+  output = list(best_score=best_score, best_model=best_model, 
+                cur_score=cur_score, cur_model=cur_model, overlap_gene=overlap_gene, nonoverlap_gene=nonoverlap_gene)
+
+  return(output)
+}
+
+#' @title Training Model
+#' 
+#' @description
+#' This function performs model training to find the best model, using information from data. It requires an initial state supplied to perform the search, and an initial model can also be supplied to be included in the initial population.
+#' Note that if a model is supplied, and the genes in the model is different from the genes in the data, only the genes overlapping between model and data will be retained for further analysis.
+#' 
+#' @param edata data frame of expression data. Should have state(row) x gene(column).
+#' @param bmodel Boolean model in data frame. If NULL, use a random Boolean model. Defaults to NULL.
+#' @param istate data frame. Must have only 1 row, which represents 1 initial state. Defaults to NULL.
+#' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must be higher than number of genes. Defaults to 6.
+#' @param and_bool logical. Whether to consider AND terms. IF bmodel is not NULL, defaults to whether AND interaction is included in bmodel. If bmodel is NULL, then defaults to TRUE.
+#' @param self_loop logical. Whether to allow self_loop in random starting model. Only used if is.null(bmodel). Default to F.
+#' @param con_thre numerical. Threshold used to generating the final consensus model. Must be between 0 and 1.
+#' @param tol numeric. Tolerance in ending condition. Default to 1e-6. It cannot be lower than .Machine$double.eps ^ 0.5.
+#' @param verbose logical. Whether to give detailed output to the screen. Defaults to F.
+#' @param detailed_output logical. Whether to return only the model inferred, or all the details obtained during optimisation. Defaults to F.
+#' 
+#' @export
+model_train = function(edata, bmodel=NULL, istate=NULL, max_varperrule=6, and_bool=T, self_loop=F, con_thre=0.3, tol=1e-6, verbose=F, detailed_output=F)
+{
+  vcat('Preparing data for analysis.\n', verbose)
+  
+  #Initialise expression data.
+  tmp_data = initialise_raw_data(edata) #returns a list of two data frames.
+  cdata = initialise_data(tmp_data[[1]]) #continuous data
+  ddata = initialise_data(tmp_data[[2]]) #discretised data
+  
+  #Initialise model.
+  if(is.null(bmodel))
+  {
+    bmodel = gen_one_rmodel(colnames(edata), max_varperrule, and_bool, self_loop)
+  } else
+  {
+    if(class(bmodel) != 'BoolModel')
+    {
+      bmodel = initialise_model(bmodel)
+    }
+    
+    if(check_and(bmodel) != and_bool)
+    {
+      and_bool = check_and(bmodel)
+    }
+  }
+  
+  #Initialise initial state.
+  if(is.null(istate))
+  {
+    istate = rbinom(length(bmodel@target), 1, 0.5)
+    #Getting a random initial state.
+    while(mean(istate) > 0.9 | mean(istate) < 0.1) #do not want initial state that is too homogenous.
+    {
+      istate = rbinom(length(bmodel@target), 1, 0.5)
+    }
+    istate = data.frame(matrix(istate, nrow=1))
+    colnames(istate) = bmodel@target
+  }
+  istate = initialise_data(istate, aslogic=T)
+  
+  #Filtering expression data.
+  overlap_gene = intersect(colnames(cdata), y=bmodel@target)
+  nonoverlap_gene = bmodel@target[!(bmodel@target %in% overlap_gene)]
+  names(overlap_gene) = bmodel@target_var[bmodel@target %in% overlap_gene]
+  names(nonoverlap_gene) = bmodel@target_var[!(bmodel@target %in% overlap_gene)]
+  
+  fddata = filter_dflist(ddata, overlap_gene, F)
+  fcdata = filter_dflist(cdata, overlap_gene, F)
+  
+  fcdata = unique_raw_data(fddata, fcdata) #removes duplicates in continuous data.
+  fddata = unique(fddata)
+  
+  vcat('Start training.\n', verbose)
+  
   #(3) Calling final combined search.
   best_model = c()
   best_score = c()
@@ -77,10 +250,7 @@ model_train = function(bmodel=NULL, edata, istate, max_varperrule=6, tol=1e-6, i
     }
     
     vcat('Stage 1: Exploring neighbouring models.\n', verbose)
-    mod_model = foreach(i=1:length(mod_model)) %dopar% {
-      c(mod_model[[i]], unlist(minmod_model(mod_model[[i]], overlap_gene=overlap_gene)))
-    }
-    mod_model = unlist(mod_model)
+    mod_model = sample(unlist(minmod_model(mod_model[[i]], overlap_gene=overlap_gene)), 1)
     
     vcat(sprintf('Total neighbouring models: %s.\n', length(mod_model)), verbose)
     if(length(mod_model)>1000000)
@@ -140,96 +310,34 @@ model_train = function(bmodel=NULL, edata, istate, max_varperrule=6, tol=1e-6, i
   vcat(sprintf('Final iteration: %s.\n', cur_step), verbose)
   
   vcat('Stage 4: Performing consensus analysis.\n', verbose)
-  consensus = model_consensus(best_model, inter_bool=inter_bool, max_varperrule=max_varperrule)
+  consensus = model_consensus(best_model, max_varperrule=max_varperrule)
+  res_con = consensus[consensus > con_thre]
+  final_model = decompress_bmodel(as.numeric(names(res_con)), get_encodings(bmodel), gene=bmodel@target)
   
-  output = list(consensus=consensus, best_model=best_model, best_score=best_score, ite_score=all_best_score, overlap_gene=overlap_gene, nonoverlap_gene=nonoverlap_gene)
+  if(detailed_output)
+  {
+    output = list(consensus=consensus, final_model=final_model, best_model=best_model, 
+                  best_score=best_score, ite_score=all_best_score, overlap_gene=overlap_gene, nonoverlap_gene=nonoverlap_gene)
+  } else
+  {
+    output = final_model
+  }
+  
   return(output)
 }
 
-#' @title Simplifying Model
+#' @title Intersection of genes
 #' 
 #' @description
-#' This method takes in a model and remove redundant terms wrt to a single initial state. 
-#' Note that this model simplification is random, and the simplified model is not guaranteed to be the simplest model possible. It is only guaranteed to be a simpler model that can give the same state space as the orignal input model.
-#' 
-#' @param bmodel S4 BoolModel object.
-#' @param istate data frame. Must have only 1 row, which represents 1 initial state.
-#' @param inter_bool logical. Indicate whether to consider AND terms.
-#' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
-#' @param verbose logical. Specifies whether to give detailed output. Default to F.
-model_simplify = function(bmodel, istate, inter_bool, max_varperrule, verbose=F)
-{
-  vcat('Stage 1: Calculating score of initial model.\n', verbose)
-  #Get the states of the original model.
-  overlap_gene = bmodel@target
-  fcdata = simulate_model(bmodel, istate)
-  fcdata = fcdata+0 #convert logical to numeric.
-  
-  ori_score = calc_mscore(bmodel, istate, fcdata, overlap_gene, max_varperrule, simplify_bool=T)
-  stopifnot(ori_score==0)
-  
-  next_bmodel = bmodel
-  ite = 1
-  while(TRUE)
-  {
-    cat(sprintf('Simplification iteration: %s\n', ite))
-    #Generate list of minimally deleted models.
-    
-    vcat('Stage 2: Exploring neighbouring models.\n', verbose)
-    
-    mod_model = c(next_bmodel, minmod_model(next_bmodel, ibool=inter_bool, overlap_gene=overlap_gene)$del_list)
-    #Breaking condition.
-    if(length(mod_model) == 1) #model can no longer be simplified.
-    {
-      final_bmodel = mod_model[[1]]
-      break
-    }
-    vcat(sprintf('Total neighbouring models: %s.\n', length(mod_model)), verbose)
-    
-    vcat('Stage 3: Simulating and calculating scores for models.\n', verbose)
-    model_res = foreach(i=1:length(mod_model), .combine='c') %dopar% {
-      model_score = calc_mscore(bmodel=mod_model[[i]], istate=istate, fcdata=fcdata, overlap_gene=overlap_gene, max_varperrule=max_varperrule, simplify_bool=T)
-      names(model_score)=i
-      model_score
-    }
-    
-    all_final_score = unname(model_res)
-    
-    stopifnot(!is.null(model_res))
-    stopifnot(length(all_final_score)==length(mod_model))
-    
-    #Breaking condition.
-    if(!any(all_final_score[-1] == 0)) #model can no longer be simplified.
-    {
-      final_bmodel = mod_model[[1]]
-      break
-    }
-    
-    #Pick a random equivalent model for next iteration.
-    best_ind = which.random.min(all_final_score)
-    next_bmodel = mod_model[[best_ind]]
-    
-    ite = ite + 1
-  }
-  
-  return(final_bmodel)
-}
-
-#' @title Intersection of input genes
-#' 
-#' @description
-#' This function finds the intersection of input genes and provide a score for them. Return a consensus model or a vector of scores.
+#' This function finds the intersection of genes and provide a score for them. Return a consensus model or a vector of scores.
 #' 
 #' @param bmodel_list list of BoolModel.
-#' @param inter_bool logical. Indicate whether to consider AND terms.
 #' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
 #' @param format character. Specifies which format to return. Possible values: 'vec', 'df'. Default to 'vec'.
-#' 
-#' @export
-model_consensus = function(bmodel_list, inter_bool, max_varperrule, format='vec')
+model_consensus = function(bmodel_list, max_varperrule, format='vec')
 {
   #(1) Convert all bmodels to encoded forms.
-  encoding = get_encodings(bmodel_list[[1]], inter_bool)
+  encoding = get_encodings(bmodel_list[[1]])
   encmodel_list = lapply(bmodel_list, function(x) compress_bmodel(x, encoding, max_varperrule))
   
   #(2) Check and remove duplicated models.

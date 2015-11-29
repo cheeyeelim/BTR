@@ -4,14 +4,14 @@
 \alias{gen_one_rmodel}
 \title{Generate a random Boolean model}
 \usage{
-gen_one_rmodel(var, mvar = length(var), inter_bool = F, self_loop = F)
+gen_one_rmodel(var, mvar = length(var), and_bool, self_loop = F)
 }
 \arguments{
 \item{var}{character vector. A vector of single genes/variables to be used in the model.}
 
 \item{mvar}{integer. Maximum number of variables in act or inh rule. Default to length(var).}
 
-\item{inter_bool}{logical. Indicates whether to include AND terms or not. Default to F.}
+\item{and_bool}{logical. Indicates whether to include AND terms or not.}
 
 \item{self_loop}{logical. Indicates whether to allow self_loop. Default to F.}
 }

@@ -5,38 +5,52 @@
 #' This function limits the number of possible variables in the model to 999.
 #' 
 #' @param bmodel S4 BoolModel object.
-#' @param inter_bool logical. Indicate whether to consider AND terms.
 #'
 #' @export
-get_encodings = function(bmodel, inter_bool)
+get_encodings = function(bmodel)
 {
+  and_bool = check_and(bmodel)
+  
   #Get all possible terms.
   svar = bmodel@target_var
-  if(inter_bool)
+  if(and_bool)
   {
     dvar = sapply(combn(svar, 2, simplify=F), function(x) paste(x, collapse='&')) #get all possible interacting pairs.
     dvar = c(dvar, sapply(combn(svar, 2, simplify=F), function(x) paste(rev(x), collapse='&'))) #get the reversed pattern as well.
+    
+    term_pool = c(svar, dvar)
+    term_pool = c('0', term_pool, '!0', paste('!', term_pool, sep='')) #add in inh terms.
+    
+    #Generate index for activation terms.
+    num_pool = seq(1, length(svar)+1) #get numbers for svar.
+    num_pool = c(num_pool, as.vector(replicate(2, seq(max(num_pool)+1, max(num_pool)+(length(dvar)/2))))) #get numbers for both forward and reverse dvar.
+    
+    #Generate index for inhibition terms.
+    num_pool = c(num_pool, seq(max(num_pool)+1, max(num_pool)+length(svar)+1)) #get numbers for svar.
+    num_pool = c(num_pool, as.vector(replicate(2, seq(max(num_pool)+1, max(num_pool)+(length(dvar)/2))))) #get numbers for both forward and reverse dvar.
+    
+    num_pool = unname(sapply(num_pool, function(x) ifelse(nchar(x)==1, paste('0', x, sep=''), x))) #convert single digit to double digit.
+    num_pool = unname(sapply(num_pool, function(x) ifelse(nchar(x)==2, paste('0', x, sep=''), x))) #convert double digit to triple digit.
+    num_pool = unname(sapply(num_pool, function(x) ifelse(nchar(x)==3, paste('0', x, sep=''), x))) #convert triple digit to quadruple digit.
+    
+    names(num_pool) = term_pool
   } else
   {
-    dvar = c()
+    term_pool = svar
+    term_pool = c('0', term_pool, '!0', paste('!', term_pool, sep='')) #add in inh terms.
+    
+    #Generate index for activation terms.
+    num_pool = seq(1, length(svar)+1) #get numbers for svar.
+    
+    #Generate index for inhibition terms.
+    num_pool = c(num_pool, seq(max(num_pool)+1, max(num_pool)+length(svar)+1)) #get numbers for svar.
+   
+    num_pool = unname(sapply(num_pool, function(x) ifelse(nchar(x)==1, paste('0', x, sep=''), x))) #convert single digit to double digit.
+    num_pool = unname(sapply(num_pool, function(x) ifelse(nchar(x)==2, paste('0', x, sep=''), x))) #convert double digit to triple digit.
+    num_pool = unname(sapply(num_pool, function(x) ifelse(nchar(x)==3, paste('0', x, sep=''), x))) #convert triple digit to quadruple digit.
+    
+    names(num_pool) = term_pool
   }
-  
-  term_pool = c(svar, dvar)
-  term_pool = c('0', term_pool, '!0', paste('!', term_pool, sep='')) #add in inh terms.
-  
-  #Generate index for activation terms.
-  num_pool = seq(1, length(svar)+1) #get numbers for svar.
-  num_pool = c(num_pool, as.vector(replicate(2, seq(max(num_pool)+1, max(num_pool)+(length(dvar)/2))))) #get numbers for both forward and reverse dvar.
-
-  #Generate index for inhibition terms.
-  num_pool = c(num_pool, seq(max(num_pool)+1, max(num_pool)+length(svar)+1)) #get numbers for svar.
-  num_pool = c(num_pool, as.vector(replicate(2, seq(max(num_pool)+1, max(num_pool)+(length(dvar)/2))))) #get numbers for both forward and reverse dvar.
-  
-  num_pool = unname(sapply(num_pool, function(x) ifelse(nchar(x)==1, paste('0', x, sep=''), x))) #convert single digit to double digit.
-  num_pool = unname(sapply(num_pool, function(x) ifelse(nchar(x)==2, paste('0', x, sep=''), x))) #convert double digit to triple digit.
-  num_pool = unname(sapply(num_pool, function(x) ifelse(nchar(x)==3, paste('0', x, sep=''), x))) #convert triple digit to quadruple digit.
-  
-  names(num_pool) = term_pool
   
   stopifnot(all(!is.na(names(num_pool))))
   stopifnot(all(!is.na(term_pool)))

@@ -4,7 +4,7 @@
 \alias{gen_singlerule}
 \title{Generate random act and inh rule for a single gene}
 \usage{
-gen_singlerule(x, np, tar_ind, ibool = F, self_loop = F)
+gen_singlerule(x, np, tar_ind, and_bool, self_loop = F)
 }
 \arguments{
 \item{x}{character vector. A vector of all single terms to be used.}
@@ -13,7 +13,7 @@ gen_singlerule(x, np, tar_ind, ibool = F, self_loop = F)
 
 \item{tar_ind}{numerical. Indicate which gene is the rule for. Used in preventing self-loop.}
 
-\item{ibool}{logical. Indicates whether to include AND terms or not. Default to F.}
+\item{and_bool}{logical. Indicates whether to include AND terms or not.}
 
 \item{self_loop}{logical. Indicates whether to allow self_loop. Default to F.}
 }

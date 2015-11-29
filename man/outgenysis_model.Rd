@@ -4,12 +4,14 @@
 \alias{outgenysis_model}
 \title{Output a Boolean Model into Genysis readable format}
 \usage{
-outgenysis_model(bmodel, filepath = getwd())
+outgenysis_model(bmodel, path = getwd(), file = NULL)
 }
 \arguments{
 \item{bmodel}{S4 BoolModel object.}
 
-\item{filepath}{character vector. Specify path (AND NOT file name). Default to current working directory, i.e. getwd(). Set to NULL to disable file output.}
+\item{path}{character. Specify path (AND NOT file name). Default to current working directory, i.e. getwd(). Set to NULL to disable file output.}
+
+\item{file}{character. Specify file name. Default to NULL for default file names.}
 }
 \description{
 This function outputs a Boolean Model in a format that is readable by Genysis. Return invisibly the formatted vector.

@@ -4,14 +4,14 @@
 \alias{grow_bmodel}
 \title{Add extra genes to a Boolean model}
 \usage{
-grow_bmodel(in_model, in_gene)
+grow_bmodel(in_gene, in_model)
 }
 \arguments{
-\item{in_model}{data frame with 2 columns, which are targets and factors}
-
 \item{in_gene}{character vector. Genes to be added into the model.}
+
+\item{in_model}{data frame or BoolModel object. If it is a data frame, it must have 2 columns, which are targets and update functions.}
 }
 \description{
-This function adds extra genes to a Boolean model. Input model must be in data frame format, output model will be BoolModel object.
+This function adds extra genes to a Boolean model. Return a list of BoolModel object and an initial state.
 }
 

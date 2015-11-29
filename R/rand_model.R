@@ -7,9 +7,9 @@
 #' @param x character vector. A vector of all single terms to be used.
 #' @param np integer. Number of gene variables in a rule. NOT max_varperrule here.
 #' @param tar_ind numerical. Indicate which gene is the rule for. Used in preventing self-loop.
-#' @param ibool logical. Indicates whether to include AND terms or not. Default to F. 
+#' @param and_bool logical. Indicates whether to include AND terms or not. 
 #' @param self_loop logical. Indicates whether to allow self_loop. Default to F.
-gen_singlerule = function(x, np, tar_ind, ibool=F, self_loop=F) 
+gen_singlerule = function(x, np, tar_ind, and_bool, self_loop=F) 
 {
   #Convert x to the form of 'v1s'.
   if(!(all(grepl('v[0-9]+s', x))))
@@ -54,7 +54,7 @@ gen_singlerule = function(x, np, tar_ind, ibool=F, self_loop=F)
     
     rule_act = c()
     
-    if(ibool)
+    if(and_bool)
     {
       #Determine which single variables to combine into double variables.
       ra_ind = as.logical(replicate(rnum_act,round(runif(1))))
@@ -101,7 +101,7 @@ gen_singlerule = function(x, np, tar_ind, ibool=F, self_loop=F)
       tmp_rinh = sample(x[!(x %in% unlist(strsplit(rule_act, '&')))], rnum_inh) #exclude terms already used in rule_act.
     }
 
-    if(ibool)
+    if(and_bool)
     {
       #Determine which single variables to combine into double variables.
       ri_ind = as.logical(replicate(rnum_inh, round(runif(1))))
@@ -145,12 +145,12 @@ gen_singlerule = function(x, np, tar_ind, ibool=F, self_loop=F)
 #' 
 #' @param var character vector. A vector of single genes/variables to be used in the model.
 #' @param mvar integer. Maximum number of variables in act or inh rule. Default to length(var).
-#' @param inter_bool logical. Indicates whether to include AND terms or not. Default to F.
+#' @param and_bool logical. Indicates whether to include AND terms or not.
 #' @param self_loop logical. Indicates whether to allow self_loop. Default to F.
 #' 
 #' @details
 #' The number of terms in a function for a gene is modelled by power-law distribution.
-gen_one_rmodel = function(var, mvar=length(var), inter_bool=F, self_loop=F)
+gen_one_rmodel = function(var, mvar=length(var), and_bool, self_loop=F)
 {
   require(poweRlaw)
   
@@ -164,7 +164,7 @@ gen_one_rmodel = function(var, mvar=length(var), inter_bool=F, self_loop=F)
   num_partner = poweRlaw::rpldis(length(var), xmin=2, alpha=3) #xmin = the minimum value of resulting random integer, alpha = scaling factor of the distribution. According to literature, for gene network, this should be 3. (or 2<alpha<3)
   num_partner[num_partner > mvar] = mvar #power law distribution can gives very high number, therefore must cap it.
   
-  arule = sapply(1:length(num_partner), function(x) gen_singlerule(var, num_partner[x], x, inter_bool, self_loop))
+  arule = sapply(1:length(num_partner), function(x) gen_singlerule(var, num_partner[x], x, and_bool, self_loop))
   arule = apply(arule, 1, c) #arule is a list of lists, with list[[1]] = all act rules, list[[2]] = all inh rules.
   
   bmodel = BoolModel(target=var, target_var=paste('v',seq(1,length(var)),'s', sep=''), rule_act=arule[[1]], rule_inh=arule[[2]])
@@ -181,10 +181,10 @@ gen_one_rmodel = function(var, mvar=length(var), inter_bool=F, self_loop=F)
 #' @param steps integer. Specify the number of steps between the two Boolean models. If steps=0, give completely random starting model.
 #' @param num_genes integer. Number of genes in the Boolean models.
 #' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
-#' @param inter_bool logical. Indicate whether to consider AND terms.
+#' @param and_bool logical. Indicate whether to consider AND terms.
 #' 
 #' @export
-gen_randata = function(n, steps, num_genes, max_varperrule, inter_bool) 
+gen_randata = function(n, steps, num_genes, max_varperrule, and_bool) 
 {
   var = paste('v', seq(1, num_genes), 's', sep='')
   
@@ -202,7 +202,7 @@ gen_randata = function(n, steps, num_genes, max_varperrule, inter_bool)
     istate = initialise_data(istate)
     
     #Setting the starting and ending models.
-    bmodel_pair = gen_two_rmodel(var, steps, max_varperrule, inter_bool)
+    bmodel_pair = gen_two_rmodel(var, steps, max_varperrule, and_bool)
     bmodel_start = bmodel_pair[[1]]
     bmodel_end = bmodel_pair[[2]]
     
@@ -237,10 +237,9 @@ gen_randata = function(n, steps, num_genes, max_varperrule, inter_bool)
 #' @param steps integer. Specify the number of steps between the two Boolean models. If steps=0, give completely random starting model.
 #' @param num_genes integer. Number of genes in the Boolean models.
 #' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
-#' @param inter_bool logical. Indicate whether to consider AND terms.
 #' 
 #' @export
-gen_randata_bn = function(n, steps, num_genes, max_varperrule, inter_bool) 
+gen_randata_bn = function(n, steps, num_genes, max_varperrule) 
 {
   if (!requireNamespace("bnlearn", quietly = TRUE)) {
     stop("Package bnlearn needed for this function to work. Please install it.",
@@ -434,7 +433,7 @@ gen_two_rmodel_dag = function(var, steps, mvar=length(var), in_amat=NULL, acycli
 #' @param var character vector. A vector of single genes/variables to be used in the model.
 #' @param steps integer. Number of steps apart between the two models. If steps=0, give completely random starting model.
 #' @param mvar integer. Maximum number of variables in act or inh rule. Default to length(var).
-#' @param inter_bool logical. Indicates whether to include AND terms or not. Default to F.
+#' @param and_bool logical. Indicates whether to include AND terms or not. Default to F.
 #' @param in_bmodel BoolModel object. The starting model supplied.
 #' @param self_loop logical. Indicates whether to allow self_loop. Default to F.
 #' 
@@ -442,7 +441,7 @@ gen_two_rmodel_dag = function(var, steps, mvar=length(var), in_amat=NULL, acycli
 #' The number of terms in a function for a gene is modelled by power-law distribution.
 #' 
 #' @export
-gen_two_rmodel = function(var, steps, mvar=length(var), inter_bool=F, in_bmodel=NULL, self_loop=F)
+gen_two_rmodel = function(var, steps, mvar=length(var), and_bool=F, in_bmodel=NULL, self_loop=F)
 {
   if(mvar > length(var))
   {
@@ -451,7 +450,7 @@ gen_two_rmodel = function(var, steps, mvar=length(var), inter_bool=F, in_bmodel=
   
   if(is.null(in_bmodel))
   {
-    bmodel1 = gen_one_rmodel(var, mvar, inter_bool, self_loop)
+    bmodel1 = gen_one_rmodel(var, mvar, and_bool, self_loop)
   } else
   {
     if(class(in_bmodel)!='BoolModel')
@@ -465,14 +464,15 @@ gen_two_rmodel = function(var, steps, mvar=length(var), inter_bool=F, in_bmodel=
   
   if(steps==0)
   {
-    bmodel2 = gen_one_rmodel(var, mvar, inter_bool, self_loop)
+    bmodel2 = gen_one_rmodel(var, mvar, and_bool, self_loop)
   } else
   {
     cur_model = bmodel1
     bmodel2 = bmodel1
-    while(length(unlist(model_setdiff(cur_model, bmodel1, inter_bool, mvar)))<steps)
+    ite = 1
+    while(length(unlist(model_setdiff(cur_model, bmodel1, mvar)))<steps)
     {
-      #       if(length(unlist(model_setdiff(cur_model, bmodel1, inter_bool, mvar))) > steps)
+      #       if(length(unlist(model_setdiff(cur_model, bmodel1, mvar))) > steps)
       #       {
       #         browser()
       #         stop('Error in code.')
@@ -531,12 +531,12 @@ gen_two_rmodel = function(var, steps, mvar=length(var), inter_bool=F, in_bmodel=
         
         next_model = sample(minmod_model(cur_model, rule_dind)$dellist, 1)[[1]]
       }
-      stopifnot(length(unlist(model_setdiff(cur_model, next_model, inter_bool, mvar)))==1)
+      stopifnot(length(unlist(model_setdiff(cur_model, next_model, mvar)))==1)
       cur_model = next_model
     }
     
     bmodel2 = cur_model
-    stopifnot(length(unlist(model_setdiff(bmodel2, bmodel1, inter_bool, mvar)))==steps)
+    stopifnot(length(unlist(model_setdiff(bmodel2, bmodel1, mvar)))==steps)
   }
   
   return(list(bmodel1, bmodel2))

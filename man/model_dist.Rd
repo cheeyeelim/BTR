@@ -4,14 +4,12 @@
 \alias{model_dist}
 \title{Calculate distance between Boolean models}
 \usage{
-model_dist(x, y, inter_bool, max_varperrule)
+model_dist(x, y, max_varperrule)
 }
 \arguments{
 \item{x}{S4 BoolModel object. Test model.}
 
 \item{y}{S4 BoolModel object. Reference model.}
-
-\item{inter_bool}{logical. Indicate whether to consider AND terms.}
 
 \item{max_varperrule}{integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.}
 }

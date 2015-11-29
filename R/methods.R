@@ -62,6 +62,46 @@ writeBM = function(bmodel, file, gene.names=F, rownames=F)
   write.csv(out_df, file=file, quote=F, row.names=F)
 }
 
+#' @title Plot Boolean Model
+#' 
+#' @description
+#' This method plots the network underlying Boolean models by using igraph for quick visualisation.
+#' 
+#' @param bmodel S4 BoolModel object.
+#' @param makePlot logical. Whether to make plot or just return the object. Default to T.
+#' @param ... Additional parameters to plot.igraph.
+#' 
+#' @export
+plotBM = function(bmodel, makePlot=T, ...)
+{
+  require(igraph)
+  
+  #Convert to amat.
+  am = bm_to_amat(bmodel)
+  
+  #Convert into a graph.
+  g = graph.adjacency(am, mode='directed', weighted=T)
+  
+  #Setup edge colour for plotting.
+  #Activation = black, inhibition = red
+  E(g)$color = sapply(E(g)$weight, function(x) ifelse(x==1, 'black', 'red'))
+  
+  #Setup other colours.
+  V(g)$frame.color = "white"
+  V(g)$color = rgb(255, 165, 0, 200, maxColorValue = 255)
+  
+  #Setup vertex font size.
+  V(g)$label.cex = 1.5
+  
+  if(makePlot)
+  {
+    #Make the plot.
+    plot(g, layout=layout_in_circle, ...)
+  }
+  
+  invisible(g)
+}
+
 #' @title Convert BoolModel into adjacency matrix
 #' 
 #' @description

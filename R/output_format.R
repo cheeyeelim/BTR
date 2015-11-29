@@ -1,13 +1,15 @@
-#' @title Output a Boolean Model into Cytoscape readable format
+#' @title Output a Boolean Model into Cytoscape & Gephi readable format
 #' 
 #' @description
-#' This function outputs a Boolean Model in a format that is readable by Cytoscape. Return invisibly the edges (with edge attributes) and node attributes. (i.e. list of 2 dfs)
+#' This function outputs a Boolean Model in a format that is readable by Cytoscape and Gephi. Return invisibly the edges (with edge attributes) and node attributes. (i.e. list of 2 dfs)
 #' 
 #' @param bmodel S4 BoolModel object.
-#' @param filepath character vector. Specify path (AND NOT file name). Default to current working directory, i.e. getwd(). Set to NULL to disable file output.
+#' @param path character. Specify path (AND NOT file name). Default to current working directory, i.e. getwd(). Set to NULL to disable file output.
+#' @param file character. Specify file name. Default to NULL for default file names.
+#' @param and_node logical. Specify AND as an individual node. Default to T.
 #' 
 #' @export
-outcyto_model = function(bmodel, filepath=getwd())
+outgraph_model = function(bmodel, path=getwd(), file=NULL, and_node=T)
 {
   edge_vec = character() #setup output vector.
   
@@ -38,50 +40,64 @@ outcyto_model = function(bmodel, filepath=getwd())
   s_irule[sapply(s_irule, function(x) length(x)==0)] = '0'
   d_irule[sapply(d_irule, function(x) length(x)==0)] = '0'
   
-  #Start writing rules out for single terms.
-  for(i in 1:length(bmodel@target))
+  if(and_node)
   {
-    edge_vec = c(edge_vec, paste(s_arule[[i]], 'activates', bmodel@target[i], sep=','))
-    edge_vec = c(edge_vec, paste(s_irule[[i]], 'inhibits', bmodel@target[i], sep=','))
-  }
-  
-  #Write rules out for double terms.
-  tmp_and = paste('and', seq(1, sum(grepl('&', unlist(d_arule)))+sum(grepl('&', unlist(d_irule)))), sep='_')
-  ind = 1
-  for(i in 1:length(bmodel@target))
-  {
-    #Write arule.
-    if(d_arule[[i]][1]!='0')
+    #Start writing rules out for single terms.
+    for(i in 1:length(bmodel@target))
     {
-      tmp_rule = strsplit(d_arule[[i]], '&')
-      
-      for(j in 1:length(tmp_rule))
-      {
-        #Join coproteins with ANDs.
-        edge_vec = c(edge_vec, paste(tmp_rule[[j]], 'activates', tmp_and[ind], sep=','))
-        
-        #Join ANDs with target genes.
-        edge_vec = c(edge_vec, paste(tmp_and[ind], 'activates', bmodel@target[i], sep=','))
-        
-        ind = ind + 1
-      }
+      edge_vec = c(edge_vec, paste(s_arule[[i]], 'activates', bmodel@target[i], sep=','))
+      edge_vec = c(edge_vec, paste(s_irule[[i]], 'inhibits', bmodel@target[i], sep=','))
     }
     
-    #Write irule.
-    if(d_irule[[i]][1]!='0')
+    #Write rules out for double terms.
+    tmp_and = paste('and', seq(1, sum(grepl('&', unlist(d_arule)))+sum(grepl('&', unlist(d_irule)))), sep='_')
+    ind = 1
+    for(i in 1:length(bmodel@target))
     {
-      tmp_rule = strsplit(d_irule[[i]], '&')
-      
-      for(j in 1:length(tmp_rule))
+      #Write arule.
+      if(d_arule[[i]][1]!='0')
       {
-        #Join coproteins with ANDs.
-        edge_vec = c(edge_vec, paste(tmp_rule[[j]], 'activates', tmp_and[ind], sep=',')) #note that this should be activates.
+        tmp_rule = strsplit(d_arule[[i]], '&')
         
-        #Join ANDs with target genes.
-        edge_vec = c(edge_vec, paste(tmp_and[ind], 'inhibits', bmodel@target[i], sep=','))
+        for(j in 1:length(tmp_rule))
+        {
+          #Join coproteins with ANDs.
+          edge_vec = c(edge_vec, paste(tmp_rule[[j]], 'activates', tmp_and[ind], sep=','))
+          
+          #Join ANDs with target genes.
+          edge_vec = c(edge_vec, paste(tmp_and[ind], 'activates', bmodel@target[i], sep=','))
+          
+          ind = ind + 1
+        }
+      }
+      
+      #Write irule.
+      if(d_irule[[i]][1]!='0')
+      {
+        tmp_rule = strsplit(d_irule[[i]], '&')
         
-        ind = ind + 1
-      } 
+        for(j in 1:length(tmp_rule))
+        {
+          #Join coproteins with ANDs.
+          edge_vec = c(edge_vec, paste(tmp_rule[[j]], 'activates', tmp_and[ind], sep=',')) #note that this should be activates.
+          
+          #Join ANDs with target genes.
+          edge_vec = c(edge_vec, paste(tmp_and[ind], 'inhibits', bmodel@target[i], sep=','))
+          
+          ind = ind + 1
+        } 
+      }
+    }
+  } else
+  {
+    #Start writing rules out for both single and double terms.
+    for(i in 1:length(bmodel@target))
+    {
+      edge_vec = c(edge_vec, paste(s_arule[[i]], 'activates', bmodel@target[i], sep=','))
+      edge_vec = c(edge_vec, paste(s_irule[[i]], 'inhibits', bmodel@target[i], sep=','))
+      
+      edge_vec = c(edge_vec, paste(d_arule[[i]], 'activates', bmodel@target[i], sep=','))
+      edge_vec = c(edge_vec, paste(d_irule[[i]], 'inhibits', bmodel@target[i], sep=','))
     }
   }
   
@@ -91,20 +107,42 @@ outcyto_model = function(bmodel, filepath=getwd())
   
   #Convert the vector into a matrix.
   edge_df = data.frame(do.call(rbind, strsplit(edge_vec, ',')))
-  colnames(edge_df) = c('start_node', 'interaction', 'end_node')
+  colnames(edge_df) = c('Source', 'Directed', 'Target')
   
-  #Generating node attributes. (to distinguish gene nodes from AND nodes)
-  node_vec = c(bmodel@target, tmp_and)
-  node_df = data.frame(node_names=node_vec, node_types=ifelse(grepl('and', node_vec), 'ands', 'genes'))
-  
-  #Output into files.
-  if(!is.null(filepath))
+  if(and_node)
   {
-    write.csv(edge_df, file=paste(filepath, '/cytoscape_edges.csv', sep=''), quote=F)
-    write.csv(node_df, file=paste(filepath, '/cytoscape_nodes.csv', sep=''), quote=F)
+    #Generating node attributes. (to distinguish gene nodes from AND nodes)
+    node_vec = c(bmodel@target, tmp_and)
+    node_df = data.frame(Id=node_vec, node_types=ifelse(grepl('and', node_vec), 'ands', 'genes'))
+  }
+
+  #Output into files.
+  if(!is.null(path))
+  {
+    if(is.null(file))
+    {
+      write.csv(edge_df, file=paste(path, '/edges.csv', sep=''), quote=F, row.names=F)
+      if(and_node)
+      {
+        write.csv(node_df, file=paste(path, '/nodes.csv', sep=''), quote=F, row.names=F)
+      }
+    } else
+    {
+      write.csv(edge_df, file=paste(path, '/', file, '_edges.csv', sep=''), quote=F, row.names=F)
+      if(and_node)
+      {
+        write.csv(node_df, file=paste(path, '/', file, '_nodes.csv', sep=''), quote=F, row.names=F)
+      }
+    }
   }
   
-  invisible(list(edge_df, node_df))
+  if(and_node)
+  {
+    invisible(list(edge_df, node_df))
+  } else
+  {
+    invisible(list(edge_df))
+  }
 }
 
 #' @title Output a Boolean Model into Genysis readable format
@@ -113,10 +151,11 @@ outcyto_model = function(bmodel, filepath=getwd())
 #' This function outputs a Boolean Model in a format that is readable by Genysis. Return invisibly the formatted vector.
 #' 
 #' @param bmodel S4 BoolModel object.
-#' @param filepath character vector. Specify path (AND NOT file name). Default to current working directory, i.e. getwd(). Set to NULL to disable file output.
-#' 
+#' @param path character. Specify path (AND NOT file name). Default to current working directory, i.e. getwd(). Set to NULL to disable file output.
+#' @param file character. Specify file name. Default to NULL for default file names.
+#'  
 #' @export
-outgenysis_model = function(bmodel, filepath=getwd())
+outgenysis_model = function(bmodel, path=getwd(), file=NULL)
 {
   gene = bmodel@target
   arule = bmodel@rule_act
@@ -150,10 +189,15 @@ outgenysis_model = function(bmodel, filepath=getwd())
   }
   
   #Output into files.
-  if(!is.null(filepath))
+  if(!is.null(path))
   {
-    exist_files = list.files(path=filepath, pattern='^genysis_input_[0-9]+.txt')
-    filename = sprintf('genysis_input_%s.txt', length(exist_files)+1)
+    if(is.null(file))
+    {
+      filename = sprintf('genysis_input.txt')
+    } else
+    {
+      filename = sprintf('%s_genysis_input.txt', file)
+    }
     
     fcon = file(filename, open='w')
     writeLines(out_vec, fcon)
@@ -163,10 +207,10 @@ outgenysis_model = function(bmodel, filepath=getwd())
   invisible(out_vec)
 }
 
-#' @title Generate state transition graph readable by Cytoscapes
+#' @title Generate state transition graph
 #' 
 #' @description
-#' This function generates a state transition graph using a Boolean model and its state space. Each node represent a state. All nodes in this graph is linked by an edge only if the 2 states have different value in only 1 gene. The output is readable by Cytoscape.
+#' This function generates a state transition graph using a Boolean model and its state space. Each node represent a state. All nodes in this graph is linked by an edge only if the 2 states have different value in only 1 gene. The output is readable by Cytoscape and Gephi.
 #' 
 #' @param mstate data frame. It should be a state(row) x gene(column) df.
 #' @param bmodel S4 BoolModel object.
@@ -175,7 +219,7 @@ outgenysis_model = function(bmodel, filepath=getwd())
 #' @param filepath character vector. Specify path (AND NOT file name). Default to current working directory, i.e. getwd(). Set to NULL to disable file output.
 #' 
 #' @export
-outcyto_stategraph = function(mstate, bmodel, directed=F, record.both=F, filepath=getwd())
+outstate_graph = function(mstate, bmodel, directed=F, record.both=F, filepath=getwd())
 {
   cat(sprintf('Generating state transition network...\n'))
   
@@ -215,8 +259,8 @@ outcyto_stategraph = function(mstate, bmodel, directed=F, record.both=F, filepat
   }
   cat('.\n')
   
-  net_all = data.frame(start_node=character(1), interaction=character(1), 
-                       end_node=character(1), stringsAsFactors=F) #Both 1 and stringsAsFactors are essential, but 1 will give an empty first row.
+  net_all = data.frame(Source=character(1), Directed=character(1), 
+                       Target=character(1), stringsAsFactors=F) #Both 1 and stringsAsFactors are essential, but 1 will give an empty first row.
   for(i in 1:nrow(mstate))
   {
     if(length(adj_cells[[i]] != 0)) #To exclude cell that does not have partner.
@@ -237,8 +281,8 @@ outcyto_stategraph = function(mstate, bmodel, directed=F, record.both=F, filepat
   
   if(record.both)
   {
-    nonnet_all = data.frame(start_node=character(1), interaction=character(1), 
-                            end_node=character(1), stringsAsFactors=F) #Both 1 and stringsAsFactors are essential, but 1 will give an empty first row.
+    nonnet_all = data.frame(Source=character(1), Directed=character(1), 
+                            Target=character(1), stringsAsFactors=F) #Both 1 and stringsAsFactors are essential, but 1 will give an empty first row.
     for(i in 1:nrow(mstate))
     {
       if(length(nonadj_cells[[i]] != 0)) #To exclude cell that does not have partner.
@@ -260,8 +304,8 @@ outcyto_stategraph = function(mstate, bmodel, directed=F, record.both=F, filepat
     #Output into files.
     if(!is.null(filepath))
     {
-      write.csv(net_all, paste(filepath, '/cytoscape_statespace_edges.txt', sep=''), quote=F, row.names=F)
-      write.csv(nonnet_all, paste(filepath, '/cytoscape_notstatespace_edges.txt', sep=''), quote=F, row.names=F)
+      write.csv(net_all, paste(filepath, '/statespace_edges.txt', sep=''), quote=F, row.names=F)
+      write.csv(nonnet_all, paste(filepath, '/notstatespace_edges.txt', sep=''), quote=F, row.names=F)
     }
     
     invisible(list(net_all, nonnet_all))
@@ -270,7 +314,7 @@ outcyto_stategraph = function(mstate, bmodel, directed=F, record.both=F, filepat
   #Output into files.
   if(!is.null(filepath))
   {
-    write.csv(net_all, paste(filepath, '/cytoscape_statespace_edges.txt', sep=''), quote=F, row.names=F)
+    write.csv(net_all, paste(filepath, '/statespace_edges.txt', sep=''), quote=F, row.names=F)
   }
   
   invisible(net_all)

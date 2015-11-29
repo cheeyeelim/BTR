@@ -4,7 +4,7 @@
 \alias{gen_two_rmodel}
 \title{Generate two random Boolean models with a specified number of steps apart}
 \usage{
-gen_two_rmodel(var, steps, mvar = length(var), inter_bool = F,
+gen_two_rmodel(var, steps, mvar = length(var), and_bool = F,
   in_bmodel = NULL, self_loop = F)
 }
 \arguments{
@@ -14,7 +14,7 @@ gen_two_rmodel(var, steps, mvar = length(var), inter_bool = F,
 
 \item{mvar}{integer. Maximum number of variables in act or inh rule. Default to length(var).}
 
-\item{inter_bool}{logical. Indicates whether to include AND terms or not. Default to F.}
+\item{and_bool}{logical. Indicates whether to include AND terms or not. Default to F.}
 
 \item{in_bmodel}{BoolModel object. The starting model supplied.}
 
