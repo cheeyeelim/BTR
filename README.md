@@ -238,7 +238,7 @@ final_model = model_train(edata, max_varperrule=4, verbose=T)
 plotBM(final_model)
 ```
 
-![](booltrainer_files/vignettes/figure-markdown_github/unnamed-chunk-15-1.png)
+![](vignettes/figure-markdown_github/unnamed-chunk-15-1.png)
 
 Inferring model with an initial model
 -------------------------------------
@@ -342,7 +342,7 @@ final_model = model_train(edata, bmodel, istate, max_varperrule=4, verbose=T)
 plotBM(final_model)
 ```
 
-![](booltrainer_files/vignettes/figure-markdown_github/unnamed-chunk-21-1.png)
+![](vignettes/figure-markdown_github/unnamed-chunk-21-1.png)
 
 Extending model with more genes
 -------------------------------
@@ -491,4 +491,4 @@ final_model = model_train(edata, grown_bmodel, grown_istate, max_varperrule=4, v
 plotBM(final_model)
 ```
 
-![](booltrainer_files/vignettes/figure-markdown_github/unnamed-chunk-29-1.png)
+![](vignettes/figure-markdown_github/unnamed-chunk-29-1.png)
