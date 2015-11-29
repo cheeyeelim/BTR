@@ -250,7 +250,10 @@ model_train = function(edata, bmodel=NULL, istate=NULL, max_varperrule=6, and_bo
     }
     
     vcat('Stage 1: Exploring neighbouring models.\n', verbose)
-    mod_model = sample(unlist(minmod_model(mod_model[[i]], overlap_gene=overlap_gene)), 1)
+    mod_model = foreach(i=1:length(mod_model)) %dopar% {
+      c(mod_model[[i]], unlist(minmod_model(mod_model[[i]], overlap_gene=overlap_gene)))
+    }
+    mod_model = unlist(mod_model)
     
     vcat(sprintf('Total neighbouring models: %s.\n', length(mod_model)), verbose)
     if(length(mod_model)>1000000)

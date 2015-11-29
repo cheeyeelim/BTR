@@ -12,8 +12,6 @@
 #' @export
 initialise_raw_data = function(x, data_type='qpcr', uni_thre=0.2, scale=T)
 {
-  require(diptest)
-  
   #(1) Convert negative to positive values.
   if(min(x)<0)
   {
@@ -53,7 +51,7 @@ initialise_raw_data = function(x, data_type='qpcr', uni_thre=0.2, scale=T)
   for(i in 1:ncol(x))
   {
     #Perform unimodality test for each gene.
-    uni_test = dip.test(x[,i])$p.value
+    uni_test = diptest::dip.test(x[,i])$p.value
     
     if(uni_test > uni_thre)
     {

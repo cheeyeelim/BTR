@@ -15,5 +15,6 @@ plotBM(bmodel, makePlot = T, ...)
 }
 \description{
 This method plots the network underlying Boolean models by using igraph for quick visualisation.
+Require igraph.
 }
 

@@ -66,6 +66,7 @@ writeBM = function(bmodel, file, gene.names=F, rownames=F)
 #' 
 #' @description
 #' This method plots the network underlying Boolean models by using igraph for quick visualisation.
+#' Require igraph.
 #' 
 #' @param bmodel S4 BoolModel object.
 #' @param makePlot logical. Whether to make plot or just return the object. Default to T.
@@ -74,29 +75,27 @@ writeBM = function(bmodel, file, gene.names=F, rownames=F)
 #' @export
 plotBM = function(bmodel, makePlot=T, ...)
 {
-  require(igraph)
-  
   #Convert to amat.
   am = bm_to_amat(bmodel)
   
   #Convert into a graph.
-  g = graph.adjacency(am, mode='directed', weighted=T)
+  g = igraph::graph.adjacency(am, mode='directed', weighted=T)
   
   #Setup edge colour for plotting.
   #Activation = black, inhibition = red
-  E(g)$color = sapply(E(g)$weight, function(x) ifelse(x==1, 'black', 'red'))
+  igraph::E(g)$color = sapply(igraph::E(g)$weight, function(x) ifelse(x==1, 'black', 'red'))
   
   #Setup other colours.
-  V(g)$frame.color = "white"
-  V(g)$color = rgb(255, 165, 0, 200, maxColorValue = 255)
+  igraph::V(g)$frame.color = "white"
+  igraph::V(g)$color = rgb(255, 165, 0, 200, maxColorValue = 255)
   
   #Setup vertex font size.
-  V(g)$label.cex = 1.5
+  igraph::V(g)$label.cex = 1.5
   
   if(makePlot)
   {
     #Make the plot.
-    plot(g, layout=layout_in_circle, ...)
+    igraph::plot.igraph(g, layout=igraph::layout_in_circle, ...)
   }
   
   invisible(g)
@@ -265,7 +264,7 @@ bm_to_df = function(bmodel)
 #' This method converts a data frame into a BoolModel object.
 #' Note that the model should only has 1 NOT operator. More than 1 is STRICTLY NOT allowed.
 #' 
-#' @param df data frame with 2 columns, targets and factors
+#' @param in_df data frame with 2 columns, targets and factors
 #' 
 #' @export
 df_to_bm = function(in_df)

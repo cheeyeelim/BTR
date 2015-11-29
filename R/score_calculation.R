@@ -62,7 +62,7 @@ m_score = function(x, bmodel, max_varperrule, detail=F)
 #' 
 #' @param bmodel S4 BoolModel object. Model to be evaluated.
 #' @param istate data frame. Must have only 1 row, which represents 1 initial state.
-#' @param data matrix. Represents the expression data df.
+#' @param fcdata matrix. Represents the expression data df.
 #' @param overlap_gene character vector. Specify which genes are present in both model and data inputs.
 #' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
 #' @param detail logical. Whether to give more details in score calculation. Default to FALSE.

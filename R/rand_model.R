@@ -152,8 +152,6 @@ gen_singlerule = function(x, np, tar_ind, and_bool, self_loop=F)
 #' The number of terms in a function for a gene is modelled by power-law distribution.
 gen_one_rmodel = function(var, mvar=length(var), and_bool, self_loop=F)
 {
-  require(poweRlaw)
-  
   if(mvar > length(var))
   {
     mvar=length(var)
@@ -172,140 +170,6 @@ gen_one_rmodel = function(var, mvar=length(var), and_bool, self_loop=F)
   return(bmodel)
 }
 
-#' @title Generate sets of random data
-#' 
-#' @description
-#' This function generates specified sets of random data, which include initial states, two Boolean models (starting and destination), and continuous+discrete data of the destination model.
-#' 
-#' @param n integer. Number of sets of random data required.
-#' @param steps integer. Specify the number of steps between the two Boolean models. If steps=0, give completely random starting model.
-#' @param num_genes integer. Number of genes in the Boolean models.
-#' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
-#' @param and_bool logical. Indicate whether to consider AND terms.
-#' 
-#' @export
-gen_randata = function(n, steps, num_genes, max_varperrule, and_bool) 
-{
-  var = paste('v', seq(1, num_genes), 's', sep='')
-  
-  output = list()
-  for(i in 1:n)
-  {
-    istate = rbinom(length(var), 1, 0.5)
-    #Getting a random initial state.
-    while(mean(istate) > 0.9 | mean(istate) < 0.1) #do not want initial state that is too homogenous.
-    {
-      istate = rbinom(length(var), 1, 0.5)
-    }
-    istate = data.frame(matrix(istate, nrow=1))
-    colnames(istate) = var
-    istate = initialise_data(istate)
-    
-    #Setting the starting and ending models.
-    bmodel_pair = gen_two_rmodel(var, steps, max_varperrule, and_bool)
-    bmodel_start = bmodel_pair[[1]]
-    bmodel_end = bmodel_pair[[2]]
-    
-    #Getting the simulated data of bmodel_end.
-    ddata = simulate_model(bmodel_end, istate)
-    
-    #Getting parameters from real data.
-    #real_param = param_bimodal(wilson_raw_data, data_type='qpcr') #only need to run once.
-    data(real_param)
-    
-    #Converting binary values to continuous values.
-    cdata = bin_to_real(ddata, real_param)
-    
-    stopifnot(dim(ddata)==dim(cdata))
-    rownames(cdata) = rownames(ddata)
-    colnames(cdata) = colnames(ddata)
-    
-    out_entry = list(istate=istate, bmodel_start=bmodel_start, bmodel_end=bmodel_end, ddata=ddata, cdata=cdata)
-    
-    output = c(output, list(out_entry))
-  }
-  
-  return(output)
-}
-
-#' @title Generate sets of random data
-#' 
-#' @description
-#' (Requires bnlearn) This function generates specified sets of random data, which include initial states, two Boolean models (starting and destination), and continuous+discrete data of the destination model.
-#' 
-#' @param n integer. Number of sets of random data required.
-#' @param steps integer. Specify the number of steps between the two Boolean models. If steps=0, give completely random starting model.
-#' @param num_genes integer. Number of genes in the Boolean models.
-#' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
-#' 
-#' @export
-gen_randata_bn = function(n, steps, num_genes, max_varperrule) 
-{
-  if (!requireNamespace("bnlearn", quietly = TRUE)) {
-    stop("Package bnlearn needed for this function to work. Please install it.",
-         call. = FALSE)
-  }
-  require('bnlearn')
-  
-  var = paste('v', seq(1, num_genes), 's', sep='')
-  
-  output = list()
-  for(i in 1:n)
-  {
-    istate = rbinom(length(var), 1, 0.5)
-    #Getting a random initial state.
-    while(mean(istate) > 0.9 | mean(istate) < 0.1) #do not want initial state that is too homogenous.
-    {
-      istate = rbinom(length(var), 1, 0.5)
-    }
-    istate = data.frame(matrix(istate, nrow=1))
-    colnames(istate) = var
-    istate = initialise_data(istate)
-    
-    #     #Generate random binary values.
-    #     bn_data = matrix(replicate(num_genes * 100, round(runif(1))), ncol=num_genes)
-    #     
-    #     #Getting parameters from real data.
-    #     #real_param = param_bimodal(wilson_raw_data, data_type='qpcr') #only need to run once.
-    #     data(real_param)
-    #     
-    #     #Converting binary values to continuous values.
-    #     bn_data = data.frame(bin_to_real(bn_data, real_param))
-    #     colnames(bn_data) = var
-    
-    #Setting the starting and ending models.
-    bn_model_pair = gen_two_rmodel_dag(var, steps, max_varperrule)
-    bn_model_start = bn_model_pair[[1]]
-    bn_model_end = bn_model_pair[[2]]
-    
-    #Converting the starting and ending models from bn objects to BoolModel objects.
-    bmodel_start = amat_to_bm(amat(bn_model_start))
-    bmodel_end = amat_to_bm(amat(bn_model_end))
-    
-    #Getting the simulated data of bmodel_end.
-    ddata = simulate_model(bmodel_end, istate)
-    
-    #Getting parameters from real data.
-    #real_param = param_bimodal(wilson_raw_data, data_type='qpcr') #only need to run once.
-    data(real_param)
-    
-    #Converting binary values to continuous values.
-    cdata = bin_to_real(ddata, real_param)
-    
-    stopifnot(dim(ddata)==dim(cdata))
-    rownames(cdata) = rownames(ddata)
-    colnames(cdata) = colnames(ddata)
-    
-    out_entry = list(istate=istate, bmodel_start=bmodel_start, bmodel_end=bmodel_end, 
-                     ddata=ddata, cdata=cdata,
-                     bn_model_start=bn_model_start, bn_model_end=bn_model_end)
-    
-    output = c(output, list(out_entry))
-  }
-  
-  return(output)
-}
-
 #' @title Generate two random DAG Boolean models with a specified number of steps apart
 #' 
 #' @description
@@ -321,107 +185,110 @@ gen_randata_bn = function(n, steps, num_genes, max_varperrule)
 #' @export
 gen_two_rmodel_dag = function(var, steps, mvar=length(var), in_amat=NULL, acyclic=T)
 { 
-  require(bnlearn)
-  
-  if(steps==0)
-  {
-    start_model = random.graph(var, method = "melancon", max.degree=mvar)
-    end_model = random.graph(var, method = "melancon", max.degree=mvar)
+  if(!requireNamespace('bnlearn', quietly = TRUE)) {
+    stop('Requires bnlearn package to run this function.')
   } else
   {
-    if(is.null(in_amat))
+    if(steps==0)
     {
-      #(3) Get first model.
-      start_model = random.graph(var, method = "melancon", max.degree=mvar)
+      start_model = bnlearn::random.graph(var, method = "melancon", max.degree=mvar)
+      end_model = bnlearn::random.graph(var, method = "melancon", max.degree=mvar)
     } else
     {
-      start_model = empty.graph(var)
-      if(acyclic)
+      if(is.null(in_amat))
       {
-        amat(start_model) = in_amat
+        #(3) Get first model.
+        start_model = bnlearn::random.graph(var, method = "melancon", max.degree=mvar)
       } else
       {
-        amat(start_model, ignore.cycles=T) = in_amat
-      }
-    }
-    
-    cur_ite = 1
-    max_ite = 100
-    out_break = F
-    while(cur_ite < max_ite & !out_break)
-    {
-      #(4) Get second model of a specified number of steps away.
-      end_model = start_model
-      memory_ind = c()
-      #memory_ind = apply(which(t(amat(end_model))==1, arr.ind = T), 1, function(x) paste(x, collapse=',')) #no undirected arcs.
-      #memory_ind = c(memory_ind, paste(1:nrow(tmp), 1:ncol(tmp), sep=',')) #no self_loops.
-      #start_time = proc.time()
-      while(TRUE)
-      {
-        tryCatch({
-          #used_time = proc.time() - start_time
-          #used_time = as.numeric(used_time)[3]
-          
-          tmp_graph = empty.graph(var)
-          tmp = amat(end_model)
-          
-          x_ind = sample(1:nrow(tmp),1)
-          y_ind = sample(1:ncol(tmp),1)
-          
-          while(paste(x_ind, y_ind, collapse=',') %in% memory_ind)
-          {
-            x_ind = sample(1:nrow(tmp),1)
-            y_ind = sample(1:ncol(tmp),1)
-          }
-          
-          memory_ind = c(memory_ind, paste(x_ind, y_ind, collapse=','))
-          if(length(memory_ind) == nrow(tmp)*ncol(tmp)) #break loop, get a new starting model and try again.
-          {
-            #cat(sprintf('For step %s, no other possible model exists.', steps))
-            break
-          }
-          
-          #Change one step at a time.
-          if(tmp[x_ind,y_ind]==0)
-          {
-            tmp[x_ind,y_ind] = 1
-          } else
-          {
-            tmp[x_ind,y_ind] = 0
-          }
-          
-          if(acyclic)
-          {
-            amat(tmp_graph) = tmp
-          } else
-          {
-            amat(tmp_graph, ignore.cycles=T) = tmp
-          }
-          
-          end_model = tmp_graph
-          
-          if(sum(abs(amat(start_model)-amat(tmp_graph))) == steps)
-          {
-            if(nrow(undirected.arcs(tmp_graph))==0) #cannot have undirected arcs in the models.
-            {
-              out_break = T
-              break
-            }
-          }
-        }, error=function(e){},
-        finally={})
+        start_model = bnlearn::empty.graph(var)
+        if(acyclic)
+        {
+          bnlearn::amat(start_model) = in_amat
+        } else
+        {
+          bnlearn::amat(start_model, ignore.cycles=T) = in_amat
+        }
       }
       
-      cur_ite = cur_ite + 1
+      cur_ite = 1
+      max_ite = 100
+      out_break = F
+      while(cur_ite < max_ite & !out_break)
+      {
+        #(4) Get second model of a specified number of steps away.
+        end_model = start_model
+        memory_ind = c()
+        #memory_ind = apply(which(t(amat(end_model))==1, arr.ind = T), 1, function(x) paste(x, collapse=',')) #no undirected arcs.
+        #memory_ind = c(memory_ind, paste(1:nrow(tmp), 1:ncol(tmp), sep=',')) #no self_loops.
+        #start_time = proc.time()
+        while(TRUE)
+        {
+          tryCatch({
+            #used_time = proc.time() - start_time
+            #used_time = as.numeric(used_time)[3]
+            
+            tmp_graph = bnlearn::empty.graph(var)
+            tmp = bnlearn::amat(end_model)
+            
+            x_ind = sample(1:nrow(tmp),1)
+            y_ind = sample(1:ncol(tmp),1)
+            
+            while(paste(x_ind, y_ind, collapse=',') %in% memory_ind)
+            {
+              x_ind = sample(1:nrow(tmp),1)
+              y_ind = sample(1:ncol(tmp),1)
+            }
+            
+            memory_ind = c(memory_ind, paste(x_ind, y_ind, collapse=','))
+            if(length(memory_ind) == nrow(tmp)*ncol(tmp)) #break loop, get a new starting model and try again.
+            {
+              #cat(sprintf('For step %s, no other possible model exists.', steps))
+              break
+            }
+            
+            #Change one step at a time.
+            if(tmp[x_ind,y_ind]==0)
+            {
+              tmp[x_ind,y_ind] = 1
+            } else
+            {
+              tmp[x_ind,y_ind] = 0
+            }
+            
+            if(acyclic)
+            {
+              bnlearn::amat(tmp_graph) = tmp
+            } else
+            {
+              bnlearn::amat(tmp_graph, ignore.cycles=T) = tmp
+            }
+            
+            end_model = tmp_graph
+            
+            if(sum(abs(bnlearn::amat(start_model)-bnlearn::amat(tmp_graph))) == steps)
+            {
+              if(nrow(bnlearn::undirected.arcs(tmp_graph))==0) #cannot have undirected arcs in the models.
+              {
+                out_break = T
+                break
+              }
+            }
+          }, error=function(e){},
+          finally={})
+        }
+        
+        cur_ite = cur_ite + 1
+      }
+      
+      if(cur_ite == max_ite)
+      {
+        stop(sprintf('For step %s, no other possible model exists.', steps))
+      }
     }
     
-    if(cur_ite == max_ite)
-    {
-      stop(sprintf('For step %s, no other possible model exists.', steps))
-    }
+    return(list(start_model, end_model))
   }
-  
-  return(list(start_model, end_model))
 }
 
 #' @title Generate two random Boolean models with a specified number of steps apart

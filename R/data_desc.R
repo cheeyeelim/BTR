@@ -96,15 +96,41 @@ NULL
 #' @usage data(wilson_raw_rnaseq)
 NULL
 
-#' @title Example Boolean Models used in the vignette
+#' @title Example Boolean Model used in the vignette
 #' 
 #' @description
-#' 3 Boolean models used in the examples of the vignette.
+#' A Boolean model used in the examples of the vignette.
 #' 
 #' @format
 #' Each Boolean model is a BoolModel object.
 #' 
 #' @docType data
-#' @name example_models
+#' @name emodel1
+#' @usage data(example_models)
+NULL
+
+#' @title Example Boolean Model used in the vignette
+#' 
+#' @description
+#' A Boolean model used in the examples of the vignette.
+#' 
+#' @format
+#' Each Boolean model is a BoolModel object.
+#' 
+#' @docType data
+#' @name emodel2
+#' @usage data(example_models)
+NULL
+
+#' @title Example Boolean Model used in the vignette
+#' 
+#' @description
+#' A Boolean model used in the examples of the vignette.
+#' 
+#' @format
+#' Each Boolean model is a BoolModel object.
+#' 
+#' @docType data
+#' @name emodel3
 #' @usage data(example_models)
 NULL

@@ -11,13 +11,13 @@ calc_mscore(bmodel, istate, fcdata, overlap_gene, max_varperrule, detail = F)
 
 \item{istate}{data frame. Must have only 1 row, which represents 1 initial state.}
 
+\item{fcdata}{matrix. Represents the expression data df.}
+
 \item{overlap_gene}{character vector. Specify which genes are present in both model and data inputs.}
 
 \item{max_varperrule}{integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.}
 
 \item{detail}{logical. Whether to give more details in score calculation. Default to FALSE.}
-
-\item{data}{matrix. Represents the expression data df.}
 }
 \description{
 This function calculates a score for a Boolean model wrt to a dataset.

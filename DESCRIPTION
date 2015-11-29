@@ -1,7 +1,7 @@
 Package: BoolTraineR
 Type: Package
 Title: Tools For Training and Analysing Asynchronous Boolean Models
-Version: 1.1.1
+Version: 1.1.2
 Date: 2015-10-22
 Author: Chee Yee Lim
 Maintainer: Chee Yee Lim <cyl49@cam.ac.uk>
@@ -22,6 +22,7 @@ LinkingTo: Rcpp
 License: GPL-3
 LazyData: true
 Suggests:
+    bnlearn (>= 3.8.1),
     knitr,
     rmarkdown
 VignetteBuilder: knitr

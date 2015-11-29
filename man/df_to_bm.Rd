@@ -7,7 +7,7 @@
 df_to_bm(in_df)
 }
 \arguments{
-\item{df}{data frame with 2 columns, targets and factors}
+\item{in_df}{data frame with 2 columns, targets and factors}
 }
 \description{
 This method converts a data frame into a BoolModel object.
