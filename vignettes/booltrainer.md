@@ -1,26 +1,26 @@
--   Brief introduction
--   Installation
--   Input data format
--   Output format
--   Useful functions in BoolTraineR
--   Example workflows
-    -   Inferring model without an initial model
-        -   Full workflow
-        -   Initial setup
-        -   Data preparation
-        -   Run model training
-    -   Inferring model with an initial model
-        -   Full workflow
-        -   Initial setup
-        -   Data preparation
-        -   Run model training
-    -   Extending model with more genes
-        -   Full workflow
-        -   Initial setup
-        -   Data preparation
-        -   Add extra genes to the initial Boolean model
-        -   Estimate initial state for the extra genes
-        -   Run model training
+-   [Brief introduction](#brief-introduction)
+-   [Installation](#installation)
+-   [Input data format](#input-data-format)
+-   [Output format](#output-format)
+-   [Useful functions in BoolTraineR](#useful-functions-in-booltrainer)
+-   [Example workflows](#example-workflows)
+    -   [Inferring model without an initial model](#inferring-model-without-an-initial-model)
+        -   [Full workflow](#full-workflow)
+        -   [Initial setup](#initial-setup)
+        -   [Data preparation](#data-preparation)
+        -   [Run model training](#run-model-training)
+    -   [Inferring model with an initial model](#inferring-model-with-an-initial-model)
+        -   [Full workflow](#full-workflow-1)
+        -   [Initial setup](#initial-setup-1)
+        -   [Data preparation](#data-preparation-1)
+        -   [Run model training](#run-model-training-1)
+    -   [Extending model with more genes](#extending-model-with-more-genes)
+        -   [Full workflow](#full-workflow-2)
+        -   [Initial setup](#initial-setup-2)
+        -   [Data preparation](#data-preparation-2)
+        -   [Add extra genes to the initial Boolean model](#add-extra-genes-to-the-initial-boolean-model)
+        -   [Estimate initial state for the extra genes](#estimate-initial-state-for-the-extra-genes)
+        -   [Run model training](#run-model-training-2)
 
 <!---
     rmarkdown::pdf_document:
