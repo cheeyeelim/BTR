@@ -41,10 +41,11 @@ Note that the examples presented in this vignette are different from the results
 install.packages('BoolTraineR')
 ```
 
-Or from Github for the latest version.
+Or from Github for the latest version. To install from Gitbub, you will require the `devtools` package.
 
 ```{r, eval = FALSE}
-install_github("cheeyeelim/booltrainer")
+install.packages('devtools')
+devtools::install_github("cheeyeelim/booltrainer")
 ```
 
 Also install `doParallel` package if you intend to use parallel processing.
@@ -58,17 +59,18 @@ A matrix with genes on the columns, and cells on the row.
 
 The expression data should be preprocessed as in any standard sequencing data processing pipelines, which includes quality control filtering and normalisation.
 
-Use `initialise_raw_data` to convert expression data into a suitable format for model inference.
+Use `initialise_raw_data` to convert expression data into a suitable format for model inference. It is recommended to use `initialise_raw_data` before subsetting the expression data for preferred cell types.
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, tidy=TRUE}
 data(wilson_raw_data)
 round(wilson_raw_data[1:5,1:5], 4)
-
-edata = initialise_raw_data(wilson_raw_data)
 ```
 ```{r, echo=FALSE}
 data(wilson_raw_data)
 knitr::kable(round(wilson_raw_data[1:5,1:5], 4))
+```
+```{r, eval=FALSE}
+edata = initialise_raw_data(wilson_raw_data, max_expr='low') #max_expr='low' because this is qPCR data.
 ```
 
 2. Initial Boolean model.
@@ -81,12 +83,13 @@ Use `initialise_model` to convert the input Boolean model into a BoolModel objec
 ```{r, eval=FALSE}
 data(krum_bmodel)
 head(krum_bmodel)
-
-bmodel = initialise_model(krum_bmodel)
 ```
 ```{r, echo=FALSE}
 data(krum_bmodel)
 knitr::kable(head(krum_bmodel))
+```
+```{r, eval=FALSE}
+bmodel = initialise_model(krum_bmodel)
 ```
 
 3. Initial state.
@@ -153,18 +156,22 @@ library(BoolTraineR)
 
 #(2) Load data.
 data(wilson_raw_data) #load a data frame of expression data.
-edata = wilson_raw_data
+tmp_data = initialise_raw_data(wilson_raw_data, max_expr = 'low')
+cdata = tmp_data[[1]] #continuous data
+ddata = tmp_data[[2]] #discretised data
 
 #(3) Filter cell types.
-cell_ind = grepl('cmp', rownames(edata)) | grepl('gmp', rownames(edata)) | grepl('mep', rownames(edata)) #select cells to be included.
-edata = edata[cell_ind,]
+cell_ind = grepl('cmp', rownames(cdata)) | grepl('gmp', rownames(cdata)) | grepl('mep', rownames(cdata))
+fcdata = cdata[cell_ind,] #select only relevant cells.
+fddata = ddata[cell_ind,]
 
 #(4) Filter genes.
 gene_ind = c('fli1', 'gata1', 'gata2', 'gfi1', 'scl', 'sfpi1') #select genes to be included.
-edata = edata[, gene_ind]
+fcdata = fcdata[, gene_ind]
+fddata = fddata[, gene_ind]
 
 #(5) Inferring Boolean model.
-final_model = model_train(edata, max_varperrule=4, verbose=T)
+final_model = model_train(cdata=fcdata, ddata=fddata, max_varperrule=4, verbose=T)
 
 #(6) Visualise the Boolean model generated.
 plotBM(final_model)
@@ -174,7 +181,7 @@ plotBM(final_model)
 
 The first step is to load the `BoolTraineR` package. If you are intending to use parallel processing, you will also need to load the `doParallel` package. Then specify how many cores you intend to use using `registerDoParallel` from the `doParallel` package.
 
-```{r}
+```{r, tidy=TRUE}
 set.seed(0) #use to ensure reproducibility. remove in actual use.
 
 #(1) Setup paths and environment.
@@ -190,24 +197,30 @@ library(BoolTraineR)
 
 Only the expression data is needed for inferring a Boolean model without an initial model.
 
-To load the data into R, use `read.table` or `read.csv`. In this example, we are using the example data included with the package, so we are accessing it by using `data`.
+To load the data into R, use `read.table` or `read.csv`. In this example, we are using the example data included with the package, so we are accessing it by using `data`. 
 
-```{r, eval=FALSE}
+`initialise_raw_data` is used to preprocess the data.
+
+```{r, eval=FALSE, tidy=TRUE}
 #(2) Load data.
 data(wilson_raw_data) #load a data frame of expression data.
-edata = wilson_raw_data
+tmp_data = initialise_raw_data(wilson_raw_data, max_expr = 'low')
+cdata = tmp_data[[1]] #continuous data
+ddata = tmp_data[[2]] #discretised data
 ```
 
-Once data is loaded, filter the cell types or genes to be included in the analysis if needed. It is advisable to reduce the number of genes to be included if the computation takes too long to complete.
+Once data is loaded and preprocessed, filter the cell types or genes to be included in the analysis if needed. It is advisable to reduce the number of genes to be included if the computation takes too long to complete.
 
-```{r, tidy=TRUE , eval=FALSE}
+```{r, tidy=TRUE , eval=FALSE, tidy=TRUE}
 #(3) Filter cell types.
-cell_ind = grepl('cmp', rownames(edata)) | grepl('gmp', rownames(edata)) | grepl('mep', rownames(edata)) #select cells to be included.
-edata = edata[cell_ind,]
+cell_ind = grepl('cmp', rownames(cdata)) | grepl('gmp', rownames(cdata)) | grepl('mep', rownames(cdata))
+fcdata = cdata[cell_ind,] #select only relevant cells.
+fddata = ddata[cell_ind,]
 
 #(4) Filter genes.
 gene_ind = c('fli1', 'gata1', 'gata2', 'gfi1', 'scl', 'sfpi1') #select genes to be included.
-edata = edata[, gene_ind]
+fcdata = fcdata[, gene_ind]
+fddata = fddata[, gene_ind]
 ```
 
 ### Run model training
@@ -218,9 +231,9 @@ In this example, `model_train` takes a few seconds to be completed on a single c
 
 You will receive a BoolModel object at the end of the model training process. The BoolModel object can be visualise quickly using `plotBM`, which is based on `igraph` package. For easier manipulation, output the Boolean model using `outgraph_model` and display it with Cytoscape or Gephi.
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, tidy=TRUE}
 #(5) Inferring Boolean model.
-final_model = model_train(edata, max_varperrule=4, verbose=T)
+final_model = model_train(cdata=fcdata, ddata=fddata, max_varperrule=4, verbose=T)
 
 #(6) Visualise the Boolean model generated.
 plotBM(final_model)
@@ -258,14 +271,17 @@ data(wilson_raw_data) #load a data frame of expression data.
 
 bmodel = initialise_model(krum_bmodel)
 istate = krum_istate
-edata = wilson_raw_data
+tmp_data = initialise_raw_data(wilson_raw_data, max_expr = 'low')
+cdata = tmp_data[[1]] #continuous data
+ddata = tmp_data[[2]] #discretised data
 
 #(3) Filter cell types.
-cell_ind = grepl('cmp', rownames(edata)) | grepl('gmp', rownames(edata)) | grepl('mep', rownames(edata)) #select cells to be included.
-edata = edata[cell_ind,]
+cell_ind = grepl('cmp', rownames(cdata)) | grepl('gmp', rownames(cdata)) | grepl('mep', rownames(cdata))
+fcdata = cdata[cell_ind,] #select only relevant cells.
+fddata = ddata[cell_ind,]
 
 #(4) Inferring Boolean model.
-final_model = model_train(edata, bmodel, istate, max_varperrule=4, verbose=T)
+final_model = model_train(cdata=fcdata, ddata=fddata, bmodel=bmodel, istate=istate, max_varperrule=4, verbose=T)
 
 #(5) Visualise the Boolean model generated.
 plotBM(final_model)
@@ -275,7 +291,7 @@ plotBM(final_model)
 
 The first step is to load the `BoolTraineR` package. If you are intending to use parallel processing, you will also need to load the `doParallel` package. Then specify how many cores you intend to use using `registerDoParallel` from the `doParallel` package.
 
-```{r}
+```{r, tidy=TRUE}
 set.seed(0) #use to ensure reproducibility. remove in actual use.
 
 #(1) Setup paths and environment.
@@ -293,9 +309,10 @@ library(BoolTraineR)
     
 To load the data into R, use `read.table` or `read.csv`. In this example, we are using the example data included with the package, so we are accessing it by using `data`.
 
-`initialise_model` converts the data frame containing the Boolean model into a BoolModel object.
+`initialise_model` converts the data frame containing the Boolean model into a BoolModel object. `initialise_raw_data` is used to preprocess the data.
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, tidy=TRUE}
+#(2) Load data.
 #(2) Load data.
 data(krum_bmodel) #load a data frame of Boolean model.
 data(krum_istate) #load a data frame of initial state.
@@ -303,28 +320,31 @@ data(wilson_raw_data) #load a data frame of expression data.
 
 bmodel = initialise_model(krum_bmodel)
 istate = krum_istate
-edata = wilson_raw_data
+tmp_data = initialise_raw_data(wilson_raw_data, max_expr = 'low')
+cdata = tmp_data[[1]] #continuous data
+ddata = tmp_data[[2]] #discretised data
 ```
 
-Once data is loaded, filter the cell types or genes to be included in the analysis if needed. It is advisable to reduce the number of genes to be included if the computation takes too long to complete. In this example, genes are not filtered as all genes that are present in both expression data and Boolean model are used automatically.
+Once data are loaded and preprocessed, filter the cell types or genes to be included in the analysis if needed. It is advisable to reduce the number of genes to be included if the computation takes too long to complete. In this example, genes are not filtered as all genes that are present in both expression data and Boolean model are used automatically.
 
-```{r, tidy=TRUE , eval=FALSE}
+```{r, tidy=TRUE , eval=FALSE, tidy=TRUE}
 #(3) Filter cell types.
-cell_ind = grepl('cmp', rownames(edata)) | grepl('gmp', rownames(edata)) | grepl('mep', rownames(edata)) #select cells to be included.
-edata = edata[cell_ind,]
+cell_ind = grepl('cmp', rownames(cdata)) | grepl('gmp', rownames(cdata)) | grepl('mep', rownames(cdata))
+fcdata = cdata[cell_ind,] #select only relevant cells.
+fddata = ddata[cell_ind,]
 ```
 
 ### Run model training
 
 To reconstruct a Boolean model from an expression data, run `model_train`. 
 
-In this example, `model_train` takes a few seconds to be completed on a single core. If this steps take a very long time to complete, do consider using the parallel processing option as described above.
+In this example, `model_train` takes one or two minutes to be completed on a single core. If this steps take a very long time to complete, do consider using the parallel processing option as described above.
 
 You will receive a BoolModel object at the end of the model training process. The BoolModel object can be visualise using `plotBM`, which is based on `igraph` package. For easier manipulation, output the Boolean model using `outgraph_model` and display it with Cytoscape or Gephi.
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, tidy=TRUE}
 #(4) Inferring Boolean model.
-final_model = model_train(edata, bmodel, istate, max_varperrule=4, verbose=T)
+final_model = model_train(cdata=fcdata, ddata=fddata, bmodel=bmodel, istate=istate, max_varperrule=4, verbose=T)
 
 #(5) Visualise the Boolean model generated.
 plotBM(final_model)
@@ -364,28 +384,30 @@ data(wilson_raw_data) #load a data frame of expression data.
 
 bmodel = initialise_model(krum_bmodel)
 istate = krum_istate
-edata = wilson_raw_data
+tmp_data = initialise_raw_data(wilson_raw_data, max_expr = 'low')
+cdata = tmp_data[[1]] #continuous data
+ddata = tmp_data[[2]] #discretised data
 
 #(3) Filter cell types.
-cell_ind = grepl('cmp', rownames(edata)) | grepl('gmp', rownames(edata)) | grepl('mep', rownames(edata)) #select cells to be included.
-edata = edata[cell_ind,]
+cell_ind = grepl('cmp', rownames(cdata)) | grepl('gmp', rownames(cdata)) | grepl('mep', rownames(cdata))
+fcdata = cdata[cell_ind,] #select only relevant cells.
+fddata = ddata[cell_ind,]
 
 #(4) Adding extra genes to the initial Boolean model.
 #extra_genes = setdiff(colnames(wilson_raw_data), bmodel@target) #to view available genes to be added.
-print(extra_genes) #to view available genes to be added.
+#print(extra_genes) #to view available genes to be added.
 add_gene = 'ldb1' #genes to be added: ldb1
 grown_bmodel = grow_bmodel(add_gene, bmodel)
 
-#(5) Estimating initial state for the extra genes.
-tmp_data = initialise_raw_data(wilson_raw_data)[[1]] #preprocess data.
-tmp_istate = mean(tmp_data[grepl('cmp', rownames(tmp_data)), add_gene]) #estimating initial state from CMPs.
+#(5) Estimating initial state for the extra genes. (estimating from CMPs)
+tmp_istate = mean(cdata[grepl('cmp', rownames(cdata)), add_gene])
 tmp_istate = matrix(round(tmp_istate), nrow=1)
 colnames(tmp_istate) = add_gene
 grown_istate = cbind(istate, tmp_istate)
 grown_istate = initialise_data(grown_istate)
 
 #(6) Inferring Boolean model.
-final_model = model_train(edata, grown_bmodel, grown_istate, max_varperrule=4, verbose=T)
+final_model = model_train(cdata=fcdata, ddata=fddata, bmodel=grown_bmodel, istate=grown_istate, verbose=T)
 
 #(7) Visualise the Boolean model generated.
 plotBM(final_model)
@@ -395,7 +417,7 @@ plotBM(final_model)
 
 The first step is to load the `BoolTraineR` package. If you are intending to use parallel processing, you will also need to load the `doParallel` package. Then specify how many cores you intend to use using `registerDoParallel` from the `doParallel` package.
 
-```{r}
+```{r, tidy=TRUE}
 set.seed(0) #use to ensure reproducibility. remove in actual use.
 
 #(1) Setup paths and environment.
@@ -413,9 +435,9 @@ library(BoolTraineR)
 
 To load the data into R, use `read.table` or `read.csv`. In this example, we are using the example data included with the package, so we are accessing it by using `data`.
 
-`initialise_model` converts the data frame containing the Boolean model into a BoolModel object.
+`initialise_model` converts the data frame containing the Boolean model into a BoolModel object. `initialise_raw_data` is used to preprocess the data.
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, tidy=TRUE}
 #(2) Load data.
 data(krum_bmodel) #load a data frame of Boolean model.
 data(krum_istate) #load a data frame of initial state.
@@ -423,24 +445,28 @@ data(wilson_raw_data) #load a data frame of expression data.
 
 bmodel = initialise_model(krum_bmodel)
 istate = krum_istate
-edata = wilson_raw_data
+tmp_data = initialise_raw_data(wilson_raw_data, max_expr = 'low')
+cdata = tmp_data[[1]] #continuous data
+ddata = tmp_data[[2]] #discretised data
 ```
 
-Once data is loaded, filter the cell types or genes to be included in the analysis if needed. It is advisable to reduce the number of genes to be included if the computation takes too long to complete. In this example, genes are not filtered as all genes that are present in both expression data and Boolean model are used automatically.
+Once data are loaded and preprocessed, filter the cell types or genes to be included in the analysis if needed. It is advisable to reduce the number of genes to be included if the computation takes too long to complete. In this example, genes are not filtered as all genes that are present in both expression data and Boolean model are used automatically.
 
 ```{r, tidy=TRUE , eval=FALSE}
 #(3) Filter cell types.
-cell_ind = grepl('cmp', rownames(edata)) | grepl('gmp', rownames(edata)) | grepl('mep', rownames(edata)) #select cells to be included.
-edata = edata[cell_ind,]
+cell_ind = grepl('cmp', rownames(cdata)) | grepl('gmp', rownames(cdata)) | grepl('mep', rownames(cdata))
+fcdata = cdata[cell_ind,] #select only relevant cells.
+fddata = ddata[cell_ind,]
 ```
 
 ### Add extra genes to the initial Boolean model
 
 Extra genes can be added to the initial model using `grow_bmodel`. The function will add extra genes into the initial model with empty update functions.
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, tidy=TRUE}
 #(4) Adding extra genes to the initial Boolean model.
-#extra_genes = setdiff(colnames(wilson_raw_data), bmodel@target) #to view available genes to be added.
+#extra_genes = setdiff(colnames(wilson_raw_data), bmodel@target)
+#print(extra_genes) #to view available genes to be added.
 add_gene = 'ldb1' #genes to be added: ldb1
 grown_bmodel = grow_bmodel(add_gene, bmodel)
 ```
@@ -449,10 +475,9 @@ grown_bmodel = grow_bmodel(add_gene, bmodel)
 
 Initial state needs to be modify to include the initial expression of the extra genes. The initial state of the extra genes can be set manually, or it can be estimated from the data if the data contain multiple cell types with known relationships. In this example, CMPs are known to be at developmental upstream of erythro-myeloid differentiation, therefore initial state can be estimated by taking the average expression of the extra genes in CMPs.
 
-```{r, eval=FALSE}
-#(5) Estimating initial state for the extra genes.
-tmp_data = initialise_raw_data(wilson_raw_data)[[1]] #preprocess data.
-tmp_istate = mean(tmp_data[grepl('cmp', rownames(tmp_data)), add_gene]) #estimating initial state from CMPs.
+```{r, eval=FALSE, tidy=TRUE}
+#(5) Estimating initial state for the extra genes. (estimating from CMPs)
+tmp_istate = mean(cdata[grepl('cmp', rownames(cdata)), add_gene])
 tmp_istate = matrix(round(tmp_istate), nrow=1)
 colnames(tmp_istate) = add_gene
 grown_istate = cbind(istate, tmp_istate)
@@ -469,9 +494,9 @@ You will receive a BoolModel object at the end of the model training process. Th
 
 *Note that this example takes a long time to run. The use of parallel processing is recommended.*
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, tidy=TRUE}
 #(6) Inferring Boolean model.
-final_model = model_train(edata, grown_bmodel, grown_istate, max_varperrule=4, verbose=T)
+final_model = model_train(cdata=fcdata, ddata=fddata, bmodel=grown_bmodel, istate=grown_istate, verbose=T)
 
 #(7) Visualise the Boolean model generated.
 plotBM(final_model)

@@ -5,12 +5,12 @@
 #' Note that kmeans clustering as binarisation only works well if the data has a bimodal distribution.
 #' 
 #' @param x matrix. Numeric data of gene expression.
-#' @param data_type character. Specify data types: qpcr, rnaseq.
+#' @param max_expr character. Specify whether max expression value is the lowest (as in qPCR), or the highest (as in RNAseq and microarray). Option: 'low', 'high'. Default to 'high'.
 #' @param uni_thre numerical. Speficy threshold for unimodality test. Default to 0.2.
 #' @param scale logical. Whether to scale the data to a range of 0-1. Default to T.
 #' 
 #' @export
-initialise_raw_data = function(x, data_type='qpcr', uni_thre=0.2, scale=T)
+initialise_raw_data = function(x, max_expr='high', uni_thre=0.2, scale=T)
 {
   #(1) Convert negative to positive values.
   if(min(x)<0)
@@ -23,7 +23,7 @@ initialise_raw_data = function(x, data_type='qpcr', uni_thre=0.2, scale=T)
   
   stopifnot(min(x)==0)
 
-  if(data_type=='qpcr')
+  if(max_expr=='low')
   {
     #(2) Invert qPCR values. Lowest expression should be close to 0, highest expression should be away from 0.
     x = abs(max(x) - x)
