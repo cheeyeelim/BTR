@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // rcpp_validate
 Rcpp::NumericVector rcpp_validate(Rcpp::NumericMatrix inf_mat, Rcpp::NumericMatrix true_mat);
-RcppExport SEXP BoolTraineR_rcpp_validate(SEXP inf_matSEXP, SEXP true_matSEXP) {
+RcppExport SEXP BTR_rcpp_validate(SEXP inf_matSEXP, SEXP true_matSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -19,7 +19,7 @@ END_RCPP
 }
 // rcpp_simulate
 Rcpp::List rcpp_simulate(Rcpp::List bmodel, Rcpp::LogicalVector fstate, bool verbose);
-RcppExport SEXP BoolTraineR_rcpp_simulate(SEXP bmodelSEXP, SEXP fstateSEXP, SEXP verboseSEXP) {
+RcppExport SEXP BTR_rcpp_simulate(SEXP bmodelSEXP, SEXP fstateSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;

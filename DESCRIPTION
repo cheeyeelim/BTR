@@ -1,4 +1,4 @@
-Package: BoolTraineR
+Package: BTR
 Type: Package
 Title: Tools For Training and Analysing Asynchronous Boolean Models
 Version: 1.1.3

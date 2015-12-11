@@ -9,7 +9,7 @@
 #' @param inf_mat matrix. It should be adjacency matrix of inferred network.
 #' @param true_mat matrix. It should be adjacency matrix of true network.
 rcpp_validate <- function(inf_mat, true_mat) {
-    .Call('BoolTraineR_rcpp_validate', PACKAGE = 'BoolTraineR', inf_mat, true_mat)
+    .Call('BTR_rcpp_validate', PACKAGE = 'BTR', inf_mat, true_mat)
 }
 
 #' @title Simulate a Boolean model.
@@ -21,6 +21,6 @@ rcpp_validate <- function(inf_mat, true_mat) {
 #' @param fstate data frame. It must have been initialised by initialise_data(), and has gene names as column names. Must contain only 1 row.
 #' @param verbose logical. Indicates whether to output progress.
 rcpp_simulate <- function(bmodel, fstate, verbose = FALSE) {
-    .Call('BoolTraineR_rcpp_simulate', PACKAGE = 'BoolTraineR', bmodel, fstate, verbose)
+    .Call('BTR_rcpp_simulate', PACKAGE = 'BTR', bmodel, fstate, verbose)
 }
 

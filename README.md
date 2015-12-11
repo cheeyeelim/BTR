@@ -2,7 +2,7 @@
 -   [Installation](#installation)
 -   [Input data format](#input-data-format)
 -   [Output format](#output-format)
--   [Useful functions in BoolTraineR](#useful-functions-in-booltrainer)
+-   [Useful functions in BTR](#useful-functions-in-BTR)
 -   [Example workflows](#example-workflows)
     -   [Inferring model without an initial model](#inferring-model-without-an-initial-model)
         -   [Full workflow](#full-workflow)
@@ -33,26 +33,26 @@
 Brief introduction
 ==================
 
-`BoolTraineR` is a model learning algorithm for reconstructing and training asynchronous Boolean models using single-cell expression data. Refer to the paper for more details on the concepts behind the algorithm. This vignette serves as a tutorial to demonstrate example workflows that can be adapted to individual cases experienced by users.
+`BTR` is a model learning algorithm for reconstructing and training asynchronous Boolean models using single-cell expression data. Refer to the paper for more details on the concepts behind the algorithm. This vignette serves as a tutorial to demonstrate example workflows that can be adapted to individual cases experienced by users.
 
-Running `BoolTraineR` is straightforward. However, note that depending on the (1) size of single-cell expression data and (2) complexity of Boolean model, `BoolTraineR` may take a long time to complete the computation. In such cases, it is advisable to use the built-in parallel processing capability of `BoolTraineR`. This can be easily achieved by using `doParallel` package, as illustrated in the example.
+Running `BTR` is straightforward. However, note that depending on the (1) size of single-cell expression data and (2) complexity of Boolean model, `BTR` may take a long time to complete the computation. In such cases, it is advisable to use the built-in parallel processing capability of `BTR`. This can be easily achieved by using `doParallel` package, as illustrated in the example.
 
 Note that the examples presented in this vignette are different from the results presented in our paper. The examples presented here have been simplified to speed up the processing time.
 
 Installation
 ============
 
-`BoolTraineR` can be installed from CRAN.
+`BTR` can be installed from CRAN.
 
 ``` r
-install.packages('BoolTraineR')
+install.packages('BTR')
 ```
 
 Or from Github for the latest version. To install from Gitbub, you will require the `devtools` package.
 
 ``` r
 install.packages('devtools')
-devtools::install_github("cheeyeelim/booltrainer")
+devtools::install_github("cheeyeelim/BTR")
 ```
 
 Also install `doParallel` package if you intend to use parallel processing.
@@ -127,22 +127,22 @@ head(krum_istate)
 Output format
 =============
 
-BoolTraineR supports several output formats for Boolean models, as shown below.
+BTR supports several output formats for Boolean models, as shown below.
 
 -   `outgraph_model` - Outputs a Boolean model in a tab-delimited file with each line being an edge (i.e. gene interaction). This function also outputs a node attribute file, which can be used to distinguish gene and AND nodes in a graph plotting software. This format is readable by both Cytoscape and Gephi.
 -   `outgenysis_model` - Outputs a Boolean model in a space-delimited file with each line being an edge (i.e. gene interaction). This format is readable by genYsis (used for steady state analysis).
 -   `writeBM` - Outputs a Boolean model in a comma-delimited file similar in format to the input file format (i.e. two columns: genes and update functions).
 
-BoolTraineR can also output a state transition graph.
+BTR can also output a state transition graph.
 
 -   `outstate_graph` - Outputs a state space of a Boolean model simulated with an initial state. This format is readable by both Cytoscape and Gephi.
 
-Useful functions in BoolTraineR
+Useful functions in BTR
 ===============================
 
-Besides training Boolean models, BoolTraineR can be used for simulating a Boolean model asynchronously and calculate the score of a Boolean model with respect to a data.
+Besides training Boolean models, BTR can be used for simulating a Boolean model asynchronously and calculate the score of a Boolean model with respect to a data.
 
--   `model_train` - Core function in `BoolTraineR` that performs Boolean model inference.
+-   `model_train` - Core function in `BTR` that performs Boolean model inference.
 -   `simulate_model` - Simulate a Boolean model asynchronously using an initial state, and return its state space.
 -   `calc_mscore` - Calculate a distance score for a Boolean model with respect to an expression data.
 -   `model_dist` - Calculate the number of genes in the update functions that differ between two Boolean models.
@@ -158,7 +158,7 @@ Inferring model without an initial model
 
 This workflow is intended for use on inferring a Boolean model without an initial model.
 
-When no initial model is used, BoolTraineR will reconstruct gene interactions from a list of user-specified genes. If the number of genes in the expression data is low (e.g. in qPCR), it is also possible to use all the genes in the expression data.
+When no initial model is used, BTR will reconstruct gene interactions from a list of user-specified genes. If the number of genes in the expression data is low (e.g. in qPCR), it is also possible to use all the genes in the expression data.
 
 ### Full workflow
 
@@ -168,7 +168,7 @@ Full workflow is included here for easy referencing. Each step is discussed in f
 set.seed(0)  #use to ensure reproducibility. remove in actual use.
 
 # (1) Setup paths and environment.
-library(BoolTraineR)
+library(BTR)
 
 # If intending to use parallel processing, uncomment the following lines.
 # library(doParallel) num_core = 4 #specify the number of cores to be used.
@@ -201,13 +201,13 @@ plotBM(final_model)
 
 ### Initial setup
 
-The first step is to load the `BoolTraineR` package. If you are intending to use parallel processing, you will also need to load the `doParallel` package. Then specify how many cores you intend to use using `registerDoParallel` from the `doParallel` package.
+The first step is to load the `BTR` package. If you are intending to use parallel processing, you will also need to load the `doParallel` package. Then specify how many cores you intend to use using `registerDoParallel` from the `doParallel` package.
 
 ``` r
 set.seed(0)  #use to ensure reproducibility. remove in actual use.
 
 # (1) Setup paths and environment.
-library(BoolTraineR)
+library(BTR)
 
 # If intending to use parallel processing, uncomment the following lines.
 # library(doParallel) num_core = 4 #specify the number of cores to be used.
@@ -279,7 +279,7 @@ Full workflow is included here for easy referencing. Each step is discussed in f
 set.seed(0)  #use to ensure reproducibility. remove in actual use.
 
 # (1) Setup paths and environment.
-library(BoolTraineR)
+library(BTR)
 
 # If intending to use parallel processing, uncomment the following lines.
 # library(doParallel) num_core = 4 #specify the number of cores to be used.
@@ -312,13 +312,13 @@ plotBM(final_model)
 
 ### Initial setup
 
-The first step is to load the `BoolTraineR` package. If you are intending to use parallel processing, you will also need to load the `doParallel` package. Then specify how many cores you intend to use using `registerDoParallel` from the `doParallel` package.
+The first step is to load the `BTR` package. If you are intending to use parallel processing, you will also need to load the `doParallel` package. Then specify how many cores you intend to use using `registerDoParallel` from the `doParallel` package.
 
 ``` r
 set.seed(0)  #use to ensure reproducibility. remove in actual use.
 
 # (1) Setup paths and environment.
-library(BoolTraineR)
+library(BTR)
 
 # If intending to use parallel processing, uncomment the following lines.
 # library(doParallel) num_core = 4 #specify the number of cores to be used.
@@ -392,7 +392,7 @@ Full workflow is included here for easy referencing. Each step is discussed in f
 set.seed(0)  #use to ensure reproducibility. remove in actual use.
 
 # (1) Setup paths and environment.
-library(BoolTraineR)
+library(BTR)
 
 # If intending to use parallel processing, uncomment the following lines.
 # library(doParallel) num_core = 4 #specify the number of cores to be used.
@@ -438,13 +438,13 @@ plotBM(final_model)
 
 ### Initial setup
 
-The first step is to load the `BoolTraineR` package. If you are intending to use parallel processing, you will also need to load the `doParallel` package. Then specify how many cores you intend to use using `registerDoParallel` from the `doParallel` package.
+The first step is to load the `BTR` package. If you are intending to use parallel processing, you will also need to load the `doParallel` package. Then specify how many cores you intend to use using `registerDoParallel` from the `doParallel` package.
 
 ``` r
 set.seed(0)  #use to ensure reproducibility. remove in actual use.
 
 # (1) Setup paths and environment.
-library(BoolTraineR)
+library(BTR)
 
 # If intending to use parallel processing, uncomment the following lines.
 # library(doParallel) num_core = 4 #specify the number of cores to be used.
