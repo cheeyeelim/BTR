@@ -262,7 +262,7 @@ final_model = model_train(cdata = fcdata, ddata = fddata, max_varperrule = 4,
 plotBM(final_model)
 ```
 
-![](btr_files/figure-markdown_github/unnamed-chunk-17-1.png)
+![](vignettes/btr_files/figure-markdown_github/unnamed-chunk-17-1.png)
 
 Inferring model with an initial model
 -------------------------------------
@@ -373,7 +373,7 @@ final_model = model_train(cdata = fcdata, ddata = fddata, bmodel = bmodel, istat
 plotBM(final_model)
 ```
 
-![](btr_files/figure-markdown_github/unnamed-chunk-23-1.png)
+![](vignettes/btr_files/figure-markdown_github/unnamed-chunk-23-1.png)
 
 Extending model with more genes
 -------------------------------
@@ -526,4 +526,4 @@ final_model = model_train(cdata = fcdata, ddata = fddata, bmodel = grown_bmodel,
 plotBM(final_model)
 ```
 
-![](btr_files/figure-markdown_github/unnamed-chunk-31-1.png)
+![](vignettes/btr_files/figure-markdown_github/unnamed-chunk-31-1.png)
