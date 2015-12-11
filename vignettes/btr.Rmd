@@ -246,6 +246,7 @@ plotBM(final_model)
 ```
 ```{r, echo=FALSE, fig.show='hold', message=FALSE, dpi=75, fig.width=6, fig.height=6}
 data(example_models)
+emodel1=initialise_model(em1)
 plotBM(emodel1)
 ```
 
@@ -357,6 +358,7 @@ plotBM(final_model)
 ```
 ```{r, echo=FALSE, fig.show='hold', message=FALSE, dpi=75, fig.width=6, fig.height=6}
 data(example_models)
+emodel2=initialise_model(em2)
 plotBM(emodel2)
 ```
 
@@ -509,5 +511,6 @@ plotBM(final_model)
 ```
 ```{r, echo=FALSE, fig.show='hold', message=FALSE, dpi=75, fig.width=6, fig.height=6}
 data(example_models)
+emodel3=initialise_model(em3)
 plotBM(emodel3)
 ```
