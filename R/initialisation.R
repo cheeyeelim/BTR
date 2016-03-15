@@ -1,16 +1,17 @@
 #' @title Initialise raw data
 #' 
 #' @description
-#' This function initialise raw gene expression values in a matrix. Return a list of two matrices: (1) continuous values and (2) binary values.
+#' This function initialise raw gene expression values in a matrix. Return either a matrix of (1) continuous values or (2) binary values.
 #' Note that kmeans clustering as binarisation only works well if the data has a bimodal distribution.
 #' 
 #' @param x matrix. Numeric data of gene expression.
 #' @param max_expr character. Specify whether max expression value is the lowest (as in qPCR), or the highest (as in RNAseq and microarray). Option: 'low', 'high'. Default to 'high'.
 #' @param uni_thre numerical. Speficy threshold for unimodality test. Default to 0.2.
 #' @param scale logical. Whether to scale the data to a range of 0-1. Default to T.
+#' @param discretised logical. Whether to return discretised data. Default to F.
 #' 
 #' @export
-initialise_raw_data = function(x, max_expr='high', uni_thre=0.2, scale=T)
+initialise_raw_data = function(x, max_expr='high', uni_thre=0.2, scale=T, discretised=F)
 {
   #(1) Convert negative to positive values.
   if(min(x)<0)
@@ -67,15 +68,12 @@ initialise_raw_data = function(x, max_expr='high', uni_thre=0.2, scale=T)
     {
       bin_result = kmeans(x[,i,drop=F], 2) #Note that kmeans do not give 1 to cluster with lower centroid.
       x_bin = unname(bin_result$cluster)
+      x_center = bin_result$centers[,1][order(bin_result$centers[,1])]
+      x_center_rank = c(0, 1) #low, high
+      names(x_center_rank) = as.numeric(names(x_center))
       
-      #(5) Decide which cluster is 0 and which is 1.
-      if(bin_result$centers[,1][1] < bin_result$centers[,1][2])
-      {
-        y[,i] = x_bin - 1 #set 1 to 0, 2 to 1.
-      } else
-      {
-        y[,i] = abs(x_bin-2) #set 1 to 1, 2 to 0.
-      }
+      #(5) Reassign cluster labels.
+      y[,i] = x_center_rank[x_bin]
     }
   }
   
@@ -84,7 +82,13 @@ initialise_raw_data = function(x, max_expr='high', uni_thre=0.2, scale=T)
   colnames(y) = colnames(x)
   rownames(y) = rownames(x)
   
-  return(list(x, y))
+  if(discretised)
+  {
+    return(y)
+  } else
+  {
+    return(x)
+  }
 }
 
 #' @title Initialise data
@@ -98,6 +102,11 @@ initialise_raw_data = function(x, max_expr='high', uni_thre=0.2, scale=T)
 #' @export
 initialise_data = function(state, aslogic=F)
 {
+  if(class(state) == 'numeric' | class(state) == 'logical')
+  {
+    state = t(data.frame(istate))
+  }
+  
   #Store column and row names.
   rn_tmp = rownames(state)
   cn_tmp = colnames(state)

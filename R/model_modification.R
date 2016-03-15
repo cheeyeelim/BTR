@@ -6,10 +6,20 @@
 #' @param bm S4 BoolModel object.
 #' @param index integer. Specifying rule of which gene to modify. If NULL, modifies all rules in the model. Defaults to NULL.
 #' @param overlap_gene character vector. Specify which genes are present in both model and data inputs.
+#' @param sep_list logical. Separate add and del lists.
+#' @param encoded logical. Return Boolean models in encoded form to save space.
+#' @param model_encoding list. Only used if encoded=T.
+#' @param and_bool logical. Default to check_and().
+#' @param self_loop logical. Whether to allow self_loop in random starting model. Default to F.
 #' 
 #' @export
-minmod_model = function(bm, index=NULL, overlap_gene=NULL)
+minmod_model = function(bm, index=NULL, overlap_gene=NULL, sep_list=F, encoded=F, model_encoding, and_bool=NULL, self_loop=F)
 {
+  if(class(bm) != 'BoolModel')
+  {
+    bm = decompress_bmodel(bm, model_encoding)
+  }
+  
   if(is.null(index))
   {
     #Modify only the overlapping genes
@@ -19,7 +29,7 @@ minmod_model = function(bm, index=NULL, overlap_gene=NULL)
     add_list = c()
     for(ind in gene_ind) #Modify act and inh rules for one gene at a time.
     {
-      tmp_list = minmod_internal(bm, ind)
+      tmp_list = minmod_internal(bm, ind, encoded, model_encoding, and_bool, self_loop)
       if(!is.null(tmp_list$dellist))
       {
         del_list = c(del_list, tmp_list$dellist)
@@ -29,11 +39,24 @@ minmod_model = function(bm, index=NULL, overlap_gene=NULL)
         add_list = c(add_list, tmp_list$addlist)
       }
     }
-    out_list = list(del_list=del_list,
-                    add_list=add_list)
+    
+    if(sep_list)
+    {
+      out_list = list(del_list=del_list,
+                      add_list=add_list)
+    } else
+    {
+      out_list = c(del_list, add_list)
+    }
   } else
   {
-    out_list = minmod_internal(bm, index)
+    if(sep_list)
+    {
+      out_list = minmod_internal(bm, index, encoded, model_encoding, and_bool, self_loop)
+    } else
+    {
+      out_list = unlist(minmod_internal(bm, index, encoded, model_encoding, and_bool, self_loop))
+    }
   }
 
   return(out_list)
@@ -46,9 +69,16 @@ minmod_model = function(bm, index=NULL, overlap_gene=NULL)
 #' 
 #' @param bm S4 BoolModel object.
 #' @param index integer. Specifying rule of which gene to modify.
-minmod_internal = function(bm, index)
+#' @param encoded logical. Return Boolean models in encoded form to save space.
+#' @param model_encoding list. Only used if encoded=T.
+#' @param and_bool logical. Default to check_and() if unspecified.
+#' @param self_loop logical. Whether to allow self_loop in random starting model. Default to F.
+minmod_internal = function(bm, index, encoded, model_encoding, and_bool, self_loop=F)
 {
-  and_bool = check_and(bm)
+  if(is.null(and_bool))
+  {
+    and_bool = check_and(bm)
+  }
   
   arule = bm@rule_act[[index]]
   irule = bm@rule_inh[[index]]
@@ -61,10 +91,14 @@ minmod_internal = function(bm, index)
     {
       tmp = unlist(strsplit(arule[1], '&')) #split the AND term into 2.
       dellist_arule = c(dellist_arule, list(c(tmp[1], arule[-1]), c(tmp[2], arule[-1])))
-    } else if(arule[1] != '0' & irule[1] != '0')
+    } else  #allow empty rule.
     {
-      dellist_arule = c(dellist_arule, list('0'))
+      dellist_arule = c(dellist_arule, list(arule[-1]))
     }
+#     else if(arule[1] != '0' & irule[1] != '0')  #not allowing empty rule.
+#     {
+#       dellist_arule = c(dellist_arule, list('0'))
+#     }
   } else
   {
     for(i in 1:length(arule))
@@ -89,10 +123,14 @@ minmod_internal = function(bm, index)
     {
       tmp = unlist(strsplit(irule[1], '&')) #split the AND term into 2.
       dellist_irule = c(dellist_irule, list(c(tmp[1], irule[-1]), c(tmp[2], irule[-1])))
-    } else if(arule[1] != '0' & irule[1] != '0')
+    } else  #allow empty rule.
     {
-      dellist_irule = c(dellist_irule, list('0'))
+      dellist_irule = c(dellist_irule, list(irule[-1]))
     }
+#     } else if(arule[1] != '0' & irule[1] != '0') #not allowing empty rule.
+#     {
+#       dellist_irule = c(dellist_irule, list('0'))
+#     }
   } else
   {
     for(i in 1:length(irule))
@@ -110,10 +148,17 @@ minmod_internal = function(bm, index)
   dellist_irule[sapply(dellist_irule, length)==0] = list('0') #if there is any empty term at the end, add in '0'
   
   #Addition of act rule. (single)
-  pos_actterm = bm@target_var[!bm@target_var %in% unlist(strsplit(c(arule, irule), '&'))]
+  if(self_loop)
+  {
+    pos_actterm = bm@target_var[!(bm@target_var %in% unlist(strsplit(c(arule, irule), '&')))]
+  } else
+  {
+    pos_actterm = bm@target_var[!(bm@target_var %in% unlist(strsplit(c(arule, irule), '&')) | bm@target_var %in% bm@target_var[index])]
+  }
+
+  addlist_arule = list()
   if(length(pos_actterm) != 0)
   {
-    addlist_arule = list()
     if(arule[1] == '0')
     {
       for(i in 1:length(pos_actterm))
@@ -152,11 +197,18 @@ minmod_internal = function(bm, index)
   }
   
   #Addition of inh rule. (single)
-  pos_inhterm = bm@target_var[!bm@target_var %in% unlist(strsplit(c(arule, irule), '&'))]
+  if(self_loop)
+  {
+    pos_inhterm = bm@target_var[!(bm@target_var %in% unlist(strsplit(c(arule, irule), '&')))]
+  } else
+  {
+    pos_inhterm = bm@target_var[!(bm@target_var %in% unlist(strsplit(c(arule, irule), '&')) | bm@target_var %in% bm@target_var[index])]
+  }
+
   #pos_inhterm = pos_inhterm[!is.na(pos_inhterm)]
+  addlist_irule = list()
   if(length(pos_inhterm)!=0)
   {
-    addlist_irule = list()
     if(irule[1] == '0')
     {
       for(i in 1:length(pos_inhterm))
@@ -204,6 +256,11 @@ minmod_internal = function(bm, index)
     {
       tmp_bm = bm
       tmp_bm@rule_act[[index]] = dellist_arule[[i]]
+      if(encoded)
+      {
+        tmp_bm = list(compress_bmodel(tmp_bm, model_encoding))
+        stopifnot(length(model_encoding[[2]])==max(round(tmp_bm[[1]])))
+      }
       bmodel_dellist = c(bmodel_dellist, tmp_bm)
     }
   }
@@ -214,6 +271,11 @@ minmod_internal = function(bm, index)
     {
       tmp_bm = bm
       tmp_bm@rule_inh[[index]] = dellist_irule[[i]]
+      if(encoded)
+      {
+        tmp_bm = list(compress_bmodel(tmp_bm, model_encoding))
+        stopifnot(length(model_encoding[[2]])==max(round(tmp_bm[[1]])))
+      }
       bmodel_dellist = c(bmodel_dellist, tmp_bm)
     }
   }
@@ -224,6 +286,11 @@ minmod_internal = function(bm, index)
     {
       tmp_bm = bm
       tmp_bm@rule_act[[index]] = addlist_arule[[i]]
+      if(encoded)
+      {
+        tmp_bm = list(compress_bmodel(tmp_bm, model_encoding))
+        stopifnot(length(model_encoding[[2]])==max(round(tmp_bm[[1]])))
+      }
       bmodel_addlist = c(bmodel_addlist, tmp_bm)
     }
   }
@@ -234,6 +301,11 @@ minmod_internal = function(bm, index)
     {
       tmp_bm = bm
       tmp_bm@rule_inh[[index]] = addlist_irule[[i]]
+      if(encoded)
+      {
+        tmp_bm = list(compress_bmodel(tmp_bm, model_encoding))
+        stopifnot(length(model_encoding[[2]])==max(round(tmp_bm[[1]])))
+      }
       bmodel_addlist = c(bmodel_addlist, tmp_bm)
     }
   }

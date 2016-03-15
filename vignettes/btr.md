@@ -1,26 +1,26 @@
--   [Brief introduction](#brief-introduction)
--   [Installation](#installation)
--   [Input data format](#input-data-format)
--   [Output format](#output-format)
--   [Useful functions in BTR](#useful-functions-in-btr)
--   [Example workflows](#example-workflows)
-    -   [Inferring model without an initial model](#inferring-model-without-an-initial-model)
-        -   [Full workflow](#full-workflow)
-        -   [Initial setup](#initial-setup)
-        -   [Data preparation](#data-preparation)
-        -   [Run model training](#run-model-training)
-    -   [Inferring model with an initial model](#inferring-model-with-an-initial-model)
-        -   [Full workflow](#full-workflow-1)
-        -   [Initial setup](#initial-setup-1)
-        -   [Data preparation](#data-preparation-1)
-        -   [Run model training](#run-model-training-1)
-    -   [Extending model with more genes](#extending-model-with-more-genes)
-        -   [Full workflow](#full-workflow-2)
-        -   [Initial setup](#initial-setup-2)
-        -   [Data preparation](#data-preparation-2)
-        -   [Add extra genes to the initial Boolean model](#add-extra-genes-to-the-initial-boolean-model)
-        -   [Estimate initial state for the extra genes](#estimate-initial-state-for-the-extra-genes)
-        -   [Run model training](#run-model-training-2)
+-   Brief introduction
+-   Installation
+-   Input data format
+-   Output format
+-   Useful functions in BTR
+-   Example workflows
+    -   Inferring model without an initial model
+        -   Full workflow
+        -   Initial setup
+        -   Data preparation
+        -   Run model training
+    -   Inferring model with an initial model
+        -   Full workflow
+        -   Initial setup
+        -   Data preparation
+        -   Run model training
+    -   Extending model with more genes
+        -   Full workflow
+        -   Initial setup
+        -   Data preparation
+        -   Add extra genes to the initial Boolean model
+        -   Estimate initial state for the extra genes
+        -   Run model training
 
 <!---
     rmarkdown::pdf_document:
@@ -176,24 +176,19 @@ library(BTR)
 
 # (2) Load data.
 data(wilson_raw_data)  #load a data frame of expression data.
-tmp_data = initialise_raw_data(wilson_raw_data, max_expr = "low")
-cdata = tmp_data[[1]]  #continuous data
-ddata = tmp_data[[2]]  #discretised data
+cdata = initialise_raw_data(wilson_raw_data, max_expr = "low")
 
 # (3) Filter cell types.
 cell_ind = grepl("cmp", rownames(cdata)) | grepl("gmp", rownames(cdata)) | grepl("mep", 
     rownames(cdata))
 fcdata = cdata[cell_ind, ]  #select only relevant cells.
-fddata = ddata[cell_ind, ]
 
 # (4) Filter genes.
 gene_ind = c("fli1", "gata1", "gata2", "gfi1", "scl", "sfpi1")  #select genes to be included.
 fcdata = fcdata[, gene_ind]
-fddata = fddata[, gene_ind]
 
 # (5) Inferring Boolean model.
-final_model = model_train(cdata = fcdata, ddata = fddata, max_varperrule = 4, 
-    verbose = T)
+final_model = model_train(cdata = fcdata, max_varperrule = 3, verbose = T)
 
 # (6) Visualise the Boolean model generated.
 plotBM(final_model)
@@ -225,9 +220,7 @@ To load the data into R, use `read.table` or `read.csv`. In this example, we are
 ``` r
 # (2) Load data.
 data(wilson_raw_data)  #load a data frame of expression data.
-tmp_data = initialise_raw_data(wilson_raw_data, max_expr = "low")
-cdata = tmp_data[[1]]  #continuous data
-ddata = tmp_data[[2]]  #discretised data
+cdata = initialise_raw_data(wilson_raw_data, max_expr = "low")
 ```
 
 Once data is loaded and preprocessed, filter the cell types or genes to be included in the analysis if needed. It is advisable to reduce the number of genes to be included if the computation takes too long to complete.
@@ -237,12 +230,10 @@ Once data is loaded and preprocessed, filter the cell types or genes to be inclu
 cell_ind = grepl("cmp", rownames(cdata)) | grepl("gmp", rownames(cdata)) | grepl("mep", 
     rownames(cdata))
 fcdata = cdata[cell_ind, ]  #select only relevant cells.
-fddata = ddata[cell_ind, ]
 
 # (4) Filter genes.
 gene_ind = c("fli1", "gata1", "gata2", "gfi1", "scl", "sfpi1")  #select genes to be included.
 fcdata = fcdata[, gene_ind]
-fddata = fddata[, gene_ind]
 ```
 
 ### Run model training
@@ -255,14 +246,13 @@ You will receive a BoolModel object at the end of the model training process. Th
 
 ``` r
 # (5) Inferring Boolean model.
-final_model = model_train(cdata = fcdata, ddata = fddata, max_varperrule = 4, 
-    verbose = T)
+final_model = model_train(cdata = fcdata, max_varperrule = 3, verbose = T)
 
 # (6) Visualise the Boolean model generated.
 plotBM(final_model)
 ```
 
-![](btr_files/figure-markdown_github/unnamed-chunk-17-1.png)
+![](vignettes/btr_files/figure-markdown_github/unnamed-chunk-17-1.png)<!-- -->
 
 Inferring model with an initial model
 -------------------------------------
@@ -292,19 +282,16 @@ data(wilson_raw_data)  #load a data frame of expression data.
 
 bmodel = initialise_model(krum_bmodel)
 istate = krum_istate
-tmp_data = initialise_raw_data(wilson_raw_data, max_expr = "low")
-cdata = tmp_data[[1]]  #continuous data
-ddata = tmp_data[[2]]  #discretised data
+cdata = initialise_raw_data(wilson_raw_data, max_expr = "low")
 
 # (3) Filter cell types.
 cell_ind = grepl("cmp", rownames(cdata)) | grepl("gmp", rownames(cdata)) | grepl("mep", 
     rownames(cdata))
 fcdata = cdata[cell_ind, ]  #select only relevant cells.
-fddata = ddata[cell_ind, ]
 
 # (4) Inferring Boolean model.
-final_model = model_train(cdata = fcdata, ddata = fddata, bmodel = bmodel, istate = istate, 
-    max_varperrule = 4, verbose = T)
+final_model = model_train(cdata = fcdata, bmodel = bmodel, istate = istate, 
+    max_varperrule = 3, verbose = T)
 
 # (5) Visualise the Boolean model generated.
 plotBM(final_model)
@@ -341,9 +328,7 @@ data(wilson_raw_data)  #load a data frame of expression data.
 
 bmodel = initialise_model(krum_bmodel)
 istate = krum_istate
-tmp_data = initialise_raw_data(wilson_raw_data, max_expr = "low")
-cdata = tmp_data[[1]]  #continuous data
-ddata = tmp_data[[2]]  #discretised data
+cdata = initialise_raw_data(wilson_raw_data, max_expr = "low")
 ```
 
 Once data are loaded and preprocessed, filter the cell types or genes to be included in the analysis if needed. It is advisable to reduce the number of genes to be included if the computation takes too long to complete. In this example, genes are not filtered as all genes that are present in both expression data and Boolean model are used automatically.
@@ -353,7 +338,6 @@ Once data are loaded and preprocessed, filter the cell types or genes to be incl
 cell_ind = grepl("cmp", rownames(cdata)) | grepl("gmp", rownames(cdata)) | grepl("mep", 
     rownames(cdata))
 fcdata = cdata[cell_ind, ]  #select only relevant cells.
-fddata = ddata[cell_ind, ]
 ```
 
 ### Run model training
@@ -366,14 +350,14 @@ You will receive a BoolModel object at the end of the model training process. Th
 
 ``` r
 # (4) Inferring Boolean model.
-final_model = model_train(cdata = fcdata, ddata = fddata, bmodel = bmodel, istate = istate, 
-    max_varperrule = 4, verbose = T)
+final_model = model_train(cdata = fcdata, bmodel = bmodel, istate = istate, 
+    max_varperrule = 3, verbose = T)
 
 # (5) Visualise the Boolean model generated.
 plotBM(final_model)
 ```
 
-![](btr_files/figure-markdown_github/unnamed-chunk-23-1.png)
+![](vignettes/btr_files/figure-markdown_github/unnamed-chunk-23-1.png)<!-- -->
 
 Extending model with more genes
 -------------------------------
@@ -405,15 +389,12 @@ data(wilson_raw_data)  #load a data frame of expression data.
 
 bmodel = initialise_model(krum_bmodel)
 istate = krum_istate
-tmp_data = initialise_raw_data(wilson_raw_data, max_expr = "low")
-cdata = tmp_data[[1]]  #continuous data
-ddata = tmp_data[[2]]  #discretised data
+cdata = initialise_raw_data(wilson_raw_data, max_expr = "low")
 
 # (3) Filter cell types.
 cell_ind = grepl("cmp", rownames(cdata)) | grepl("gmp", rownames(cdata)) | grepl("mep", 
     rownames(cdata))
 fcdata = cdata[cell_ind, ]  #select only relevant cells.
-fddata = ddata[cell_ind, ]
 
 # (4) Adding extra genes to the initial Boolean model. extra_genes =
 # setdiff(colnames(wilson_raw_data), bmodel@target) #to view available genes
@@ -429,8 +410,8 @@ grown_istate = cbind(istate, tmp_istate)
 grown_istate = initialise_data(grown_istate)
 
 # (6) Inferring Boolean model.
-final_model = model_train(cdata = fcdata, ddata = fddata, bmodel = grown_bmodel, 
-    istate = grown_istate, verbose = T)
+final_model = model_train(cdata = fcdata, bmodel = grown_bmodel, istate = grown_istate, 
+    verbose = T)
 
 # (7) Visualise the Boolean model generated.
 plotBM(final_model)
@@ -467,9 +448,7 @@ data(wilson_raw_data)  #load a data frame of expression data.
 
 bmodel = initialise_model(krum_bmodel)
 istate = krum_istate
-tmp_data = initialise_raw_data(wilson_raw_data, max_expr = "low")
-cdata = tmp_data[[1]]  #continuous data
-ddata = tmp_data[[2]]  #discretised data
+cdata = initialise_raw_data(wilson_raw_data, max_expr = "low")
 ```
 
 Once data are loaded and preprocessed, filter the cell types or genes to be included in the analysis if needed. It is advisable to reduce the number of genes to be included if the computation takes too long to complete. In this example, genes are not filtered as all genes that are present in both expression data and Boolean model are used automatically.
@@ -479,7 +458,6 @@ Once data are loaded and preprocessed, filter the cell types or genes to be incl
 cell_ind = grepl("cmp", rownames(cdata)) | grepl("gmp", rownames(cdata)) | grepl("mep", 
     rownames(cdata))
 fcdata = cdata[cell_ind, ]  #select only relevant cells.
-fddata = ddata[cell_ind, ]
 ```
 
 ### Add extra genes to the initial Boolean model
@@ -519,11 +497,11 @@ You will receive a BoolModel object at the end of the model training process. Th
 
 ``` r
 # (6) Inferring Boolean model.
-final_model = model_train(cdata = fcdata, ddata = fddata, bmodel = grown_bmodel, 
-    istate = grown_istate, verbose = T)
+final_model = model_train(cdata = fcdata, bmodel = grown_bmodel, istate = grown_istate, 
+    verbose = T)
 
 # (7) Visualise the Boolean model generated.
 plotBM(final_model)
 ```
 
-![](btr_files/figure-markdown_github/unnamed-chunk-31-1.png)
+![](vignettes/btr_files/figure-markdown_github/unnamed-chunk-31-1.png)<!-- -->

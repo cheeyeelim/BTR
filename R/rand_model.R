@@ -9,7 +9,8 @@
 #' @param tar_ind numerical. Indicate which gene is the rule for. Used in preventing self-loop.
 #' @param and_bool logical. Indicates whether to include AND terms or not. 
 #' @param self_loop logical. Indicates whether to allow self_loop. Default to F.
-gen_singlerule = function(x, np, tar_ind, and_bool, self_loop=F) 
+#' @param rule_type character. Types of rules. Defaults to random.
+gen_singlerule = function(x, np, tar_ind, and_bool, self_loop=F, rule_type='random') 
 {
   #Convert x to the form of 'v1s'.
   if(!(all(grepl('v[0-9]+s', x))))
@@ -23,20 +24,38 @@ gen_singlerule = function(x, np, tar_ind, and_bool, self_loop=F)
     }
   }
   
-  rnum_act = floor(runif(1, 0, np+1)) #get a random number from 0 to np for act_rule.
-  
-  if(rnum_act==0)
+  if(rule_type=='full')
   {
-    #rnum_inh = floor(runif(1, 1, np-rnum_act+1)) #must have at least one term if rnum_act is empty.
-    rnum_inh = np
-  } else {
-    #rnum_inh = floor(runif(1, 0, np-rnum_act+1)) #get a random number from 0 to np-rnum_act for inh_rule.
-    rnum_inh = np - rnum_act
-  }
-  
-  if(rnum_act + rnum_inh > length(x)) #cannot use more terms than available.
+    if(self_loop)
+    {
+      rnum_act = np
+      rnum_inh = 0
+    } else
+    {
+      rnum_act = np - 1
+      rnum_inh = 0
+    }
+  } else if(rule_type=='minimal')
   {
-    stop('Error in generating rules for random models.')
+    rnum_act = 1
+    rnum_inh = 0
+  } else if(rule_type=='random')
+  {
+    rnum_act = floor(runif(1, 0, np+1)) #get a random number from 0 to np for act_rule.
+    
+    if(rnum_act==0)
+    {
+      #rnum_inh = floor(runif(1, 1, np-rnum_act+1)) #must have at least one term if rnum_act is empty.
+      rnum_inh = np
+    } else {
+      #rnum_inh = floor(runif(1, 0, np-rnum_act+1)) #get a random number from 0 to np-rnum_act for inh_rule.
+      rnum_inh = np - rnum_act
+    }
+    
+    if(rnum_act + rnum_inh > length(x)) #cannot use more terms than available.
+    {
+      stop('Error in generating rules for random models.')
+    }
   }
   
   #Get the activation rule.
@@ -92,10 +111,18 @@ gen_singlerule = function(x, np, tar_ind, and_bool, self_loop=F)
     #Get the inhibition rule.
     if(!self_loop)
     {
-      intr_x = x[!(x %in% unlist(strsplit(rule_act, '&')))]
-      rinh_prob = rep(1/(length(intr_x)-1), length(intr_x))
-      rinh_prob[which(intr_x %in% x[tar_ind])] = 0 #set probability to 0, to prevent self-loop.
-      tmp_rinh = sample(intr_x, rnum_inh, prob=rinh_prob) #get single variables first.
+      if(rule_type=='full')
+      {
+        rinh_prob = rep(1/(length(x)-1), length(x))
+        rinh_prob[tar_ind] = 0 #set probability to 0, to prevent self-loop.
+        tmp_rinh = sample(x, rnum_inh, prob=rinh_prob) #get single variables first.
+      } else
+      {
+        intr_x = x[!(x %in% unlist(strsplit(rule_act, '&')))]
+        rinh_prob = rep(1/(length(intr_x)-1), length(intr_x))
+        rinh_prob[which(intr_x %in% x[tar_ind])] = 0 #set probability to 0, to prevent self-loop.
+        tmp_rinh = sample(intr_x, rnum_inh, prob=rinh_prob) #get single variables first.
+      }
     } else
     {
       tmp_rinh = sample(x[!(x %in% unlist(strsplit(rule_act, '&')))], rnum_inh) #exclude terms already used in rule_act.
@@ -144,13 +171,15 @@ gen_singlerule = function(x, np, tar_ind, and_bool, self_loop=F)
 #' Note that this method will not give empty rule, i.e. 0 term in both act and inh rules.
 #' 
 #' @param var character vector. A vector of single genes/variables to be used in the model.
-#' @param mvar integer. Maximum number of variables in act or inh rule. Default to length(var).
+#' @param exponent integer. The exponent of power law distribution. Default to 3.
 #' @param and_bool logical. Indicates whether to include AND terms or not.
 #' @param self_loop logical. Indicates whether to allow self_loop. Default to F.
+#' @param mvar integer. Maximum number of variables in act or inh rule. Default to length(var).
+#' @param model_type character. Specifies the type of model generated.
 #' 
 #' @details
 #' The number of terms in a function for a gene is modelled by power-law distribution.
-gen_one_rmodel = function(var, mvar=length(var), and_bool, self_loop=F)
+gen_one_rmodel = function(var, exponent=3, and_bool, self_loop=F, mvar=length(var), model_type='random')
 {
   if(mvar > length(var))
   {
@@ -159,10 +188,21 @@ gen_one_rmodel = function(var, mvar=length(var), and_bool, self_loop=F)
   
   #(1) By using power law distribution, estimate the in-degree genetic partner for each gene. 
   #The minimum in degree is set to 2. 'v1s' and 'v1s&v2s' are currently considered as 2 different partners.
-  num_partner = poweRlaw::rpldis(length(var), xmin=2, alpha=3) #xmin = the minimum value of resulting random integer, alpha = scaling factor of the distribution. According to literature, for gene network, this should be 3. (or 2<alpha<3)
-  num_partner[num_partner > mvar] = mvar #power law distribution can gives very high number, therefore must cap it.
+  if(model_type=='full')
+  {
+    mvar = length(var)
+    num_partner = rep(mvar, length(var))
+  } else if(model_type=='minimal')
+  {
+    mvar = 1
+    num_partner = rep(mvar, length(var))
+  } else if(model_type=='random')
+  {
+    num_partner = poweRlaw::rpldis(length(var), xmin=2, alpha=exponent) #xmin = the minimum value of resulting random integer, alpha = scaling factor of the distribution. According to literature, for gene network, this should be 3. (or 2<alpha<3)
+    num_partner[num_partner > mvar] = mvar #power law distribution can gives very high number, therefore must cap it.
+  }
   
-  arule = sapply(1:length(num_partner), function(x) gen_singlerule(var, num_partner[x], x, and_bool, self_loop))
+  arule = sapply(1:length(num_partner), function(x) gen_singlerule(var, num_partner[x], x, and_bool, self_loop, rule_type = model_type))
   arule = apply(arule, 1, c) #arule is a list of lists, with list[[1]] = all act rules, list[[2]] = all inh rules.
   
   bmodel = BoolModel(target=var, target_var=paste('v',seq(1,length(var)),'s', sep=''), rule_act=arule[[1]], rule_inh=arule[[2]])
@@ -300,7 +340,7 @@ gen_two_rmodel_dag = function(var, steps, mvar=length(var), in_amat=NULL, acycli
 #' @param var character vector. A vector of single genes/variables to be used in the model.
 #' @param steps integer. Number of steps apart between the two models. If steps=0, give completely random starting model.
 #' @param mvar integer. Maximum number of variables in act or inh rule. Default to length(var).
-#' @param and_bool logical. Indicates whether to include AND terms or not. Default to F.
+#' @param and_bool logical. Indicates whether to include AND terms or not.
 #' @param in_bmodel BoolModel object. The starting model supplied.
 #' @param self_loop logical. Indicates whether to allow self_loop. Default to F.
 #' 
@@ -308,7 +348,7 @@ gen_two_rmodel_dag = function(var, steps, mvar=length(var), in_amat=NULL, acycli
 #' The number of terms in a function for a gene is modelled by power-law distribution.
 #' 
 #' @export
-gen_two_rmodel = function(var, steps, mvar=length(var), and_bool=F, in_bmodel=NULL, self_loop=F)
+gen_two_rmodel = function(var, steps, mvar=length(var), and_bool, in_bmodel=NULL, self_loop=F)
 {
   if(mvar > length(var))
   {
@@ -383,9 +423,17 @@ gen_two_rmodel = function(var, steps, mvar=length(var), and_bool=F, in_bmodel=NU
         {
           rule_aind = sample(avail_add_ind, 1)
         }
-        
-        next_model = sample(minmod_model(cur_model, rule_aind)$addlist, 1)[[1]]
-        
+
+        all_models = minmod_model(cur_model, rule_aind, sep_list=T, and_bool=and_bool, self_loop=self_loop)$addlist
+        samp_ind = sample(1:length(all_models), 1)[[1]]
+        next_model = all_models[[samp_ind]]
+        all_models = all_models[-samp_ind]
+        while(length(unlist(model_setdiff(cur_model, next_model, mvar)))!=1)
+        {
+          samp_ind = sample(1:length(all_models), 1)[[1]]
+          next_model = all_models[[samp_ind]]
+          all_models = all_models[-samp_ind]
+        }
       } else if(mod_choice == 'del')
       {
         if(length(avail_del_ind) == 1)
@@ -396,7 +444,16 @@ gen_two_rmodel = function(var, steps, mvar=length(var), and_bool=F, in_bmodel=NU
           rule_dind = sample(avail_del_ind, 1)
         }
         
-        next_model = sample(minmod_model(cur_model, rule_dind)$dellist, 1)[[1]]
+        all_models = minmod_model(cur_model, rule_aind, sep_list=T, and_bool=and_bool, self_loop=self_loop)$dellist
+        samp_ind = sample(1:length(all_models), 1)[[1]]
+        next_model = all_models[[samp_ind]]
+        all_models = all_models[-samp_ind]
+        while(length(unlist(model_setdiff(cur_model, next_model, mvar)))!=1)
+        {
+          samp_ind = sample(1:length(all_models), 1)[[1]]
+          next_model = all_models[[samp_ind]]
+          all_models = all_models[-samp_ind]
+        }
       }
       stopifnot(length(unlist(model_setdiff(cur_model, next_model, mvar)))==1)
       cur_model = next_model

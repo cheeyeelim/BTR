@@ -5,11 +5,19 @@
 #' This function limits the number of possible variables in the model to 999.
 #' 
 #' @param bmodel S4 BoolModel object.
+#' @param force_and logical. Whether to include ANDs in the encoding even if no AND is present in the bmodel object. Defaults to T.
 #'
 #' @export
-get_encodings = function(bmodel)
+get_encodings = function(bmodel, force_and=T)
 {
-  and_bool = check_and(bmodel)
+  if(force_and)
+  {
+    and_bool = T
+  } else
+  {
+    and_bool = check_and(bmodel)
+  }
+  
   
   #Get all possible terms.
   svar = bmodel@target_var
@@ -52,10 +60,14 @@ get_encodings = function(bmodel)
     names(num_pool) = term_pool
   }
   
+  #Store original gene names.
+  bnames = bmodel@target
+  names(bnames) = bmodel@target_var
+
   stopifnot(all(!is.na(names(num_pool))))
   stopifnot(all(!is.na(term_pool)))
   
-  return(num_pool)
+  return(list(num_pool, bnames))
 }
 
 #' @title Compress BoolModel
@@ -66,29 +78,34 @@ get_encodings = function(bmodel)
 #' 
 #' @param bmodel S4 BoolModel object.
 #' @param encoding named numerical vector returned by get_encodings().
-#' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
 #'
 #' @export
-compress_bmodel = function(bmodel, encoding, max_varperrule)
+compress_bmodel = function(bmodel, encoding)
 {
+  encoding = encoding[[1]]
+  stopifnot(length(bmodel@target)== length(encoding[!grepl('&|!', names(encoding))])-1) #check if bmodel and encoding match.
+  
   #Convert variables into encodings.
   #Convert 'v1s' into '001'.
-  act_list = sapply(bmodel@rule_act, function(x) unname(encoding[x]))
-  inh_list = sapply(bmodel@rule_inh, function(x) unname(encoding[paste('!', x, sep='')]))
+  act_list = lapply(bmodel@rule_act, function(x) unname(encoding[x]))
+  inh_list = lapply(bmodel@rule_inh, function(x) unname(encoding[paste('!', x, sep='')]))
   
   stopifnot(all(!is.na(unlist(act_list))))
   stopifnot(all(!is.na(unlist(inh_list))))
   
+  #Get max number of variables.
+  max_lim = max(sapply(act_list, length) + sapply(inh_list, length))
+  
   #Convert '0001' into 1.0001.
-  act_list = sapply(1:length(act_list), function(x) as.numeric(paste(x, act_list[[x]], sep='.')))
-  inh_list = sapply(1:length(inh_list), function(x) as.numeric(paste(x, inh_list[[x]], sep='.')))
+  act_list = lapply(1:length(act_list), function(x) as.numeric(paste(x, act_list[[x]], sep='.')))
+  inh_list = lapply(1:length(inh_list), function(x) as.numeric(paste(x, inh_list[[x]], sep='.')))
   
   #Convert list into vector.
   act_vec = unique(unlist(act_list))
   inh_vec = unique(unlist(inh_list))
   
-  #Add in integer that represents empty spots, according to max_varperrule.
-  empty_term = max_varperrule - (rle(round(act_vec))$lengths+rle(round(inh_vec))$lengths) #get freq of missing terms.
+  #Add in integer that represents empty spots, according to max_lim.
+  empty_term = max_lim - (rle(round(act_vec))$lengths+rle(round(inh_vec))$lengths) #get freq of missing terms.
   empty_term[empty_term < 0] = 0 #set negative values to 0. note that negative values can occur because this is a soft constraint.
   empty_term = unlist(sapply(1:length(empty_term), function(x) rep(x, empty_term[x])))
   
@@ -103,12 +120,14 @@ compress_bmodel = function(bmodel, encoding, max_varperrule)
 #' 
 #' @param x vector returned by compress_bmodel.
 #' @param encoding named numerical vector returned by get_encodings().
-#' @param gene character vector. Corresponds to genes in the bmodel. Default to using variable names in encoding.
 #' @param format character. Specifies which format to return. Possible values: 'bmodel', 'df', 'amat', 'simp_df'. Default to 'bmodel'.
 #'
 #' @export
-decompress_bmodel = function(x, encoding, gene=NULL, format='bmodel')
+decompress_bmodel = function(x, encoding, format='bmodel')
 {
+  gene = encoding[[2]]
+  encoding = encoding[[1]]
+  
   #Setup default gene names.
   gene_var = names(encoding)[!(grepl('&',names(encoding))|grepl('!',names(encoding)))][-1]
   if(is.null(gene))

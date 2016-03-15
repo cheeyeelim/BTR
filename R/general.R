@@ -147,6 +147,26 @@ which.random.min = function(x, favour_first=F)
   return(id)
 }
 
+# #' @title Filter a Boolean model
+# #' 
+# #' @description
+# #' This function filters a Boolean model to retain only overlapping genes.
+# #' 
+# #' @param x BoolModel.
+# #' @param y character vector. Overlapping genes.
+# filter_bmodel = function(x, y)
+# {
+#   stopifnot(class(x)== 'BoolModel')
+#   
+#   if(uniq_bool)
+#   {
+#     return(unique(x[,colnames(x) %in% y, drop=F]))
+#   } else
+#   {
+#     return(x[,colnames(x) %in% y, drop=F])
+#   }
+# }
+
 #' @title Filter columns of df in a list
 #' 
 #' @description
@@ -175,12 +195,11 @@ filter_dflist = function(x, y, uniq_bool=T)
 #' 
 #' @param x S4 BoolModel object. Test model.
 #' @param y S4 BoolModel object. Reference model.
-#' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
 #' 
 #' @export
-model_dist = function(x, y, max_varperrule)
+model_dist = function(x, y)
 {
-  set_diff = unlist(model_setdiff(x, y, max_varperrule))
+  set_diff = unlist(model_setdiff(x, y))
   
   #Calculate total dist.
   t_dist = length(set_diff)
@@ -196,19 +215,20 @@ model_dist = function(x, y, max_varperrule)
 #' 
 #' @param x S4 BoolModel object. Test model.
 #' @param y S4 BoolModel object. Reference model.
-#' @param max_varperrule integer. Maximum number of terms per rule (combining both act and inh rule). Note that this number must not be smaller than number of variables. Default to 6.
 #' @param directed logical. If TRUE, return the difference in terms with respect to x.
 #' 
 #' @export
-model_setdiff = function(x, y, max_varperrule, directed=F)
+model_setdiff = function(x, y, directed=F)
 {
   stopifnot(length(x@target) == length(y@target))
-  stopifnot(get_encodings(x)==get_encodings(y))
+  stopifnot(get_encodings(x)[[1]]==get_encodings(y)[[1]])
   
   ind = get_encodings(x)
   
-  x1 = compress_bmodel(x, ind, max_varperrule)
-  x2 = compress_bmodel(y, ind, max_varperrule)
+  x1 = compress_bmodel(x, ind)
+  x2 = compress_bmodel(y, ind)
+  
+  ind = ind[[1]]
   
   #Pick which model has more terms, and which has less.
   more_ind = which.max(c(length(x1), length(x2)))
