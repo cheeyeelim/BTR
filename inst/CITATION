@@ -12,4 +12,4 @@ bibentry(bibtype = "Manual",
 		    person("Berthold", "Gottgens")),
          year = year,
          note = note,
-         url = "https://CRAN.R-project.org/package=btr")
+         url = "https://CRAN.R-project.org/package=BTR")
