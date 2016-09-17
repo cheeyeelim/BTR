@@ -15,6 +15,21 @@
 #' @param verbose logical. Whether to give detailed output to the screen. Defaults to F.
 #' @param detailed_output logical. Whether to return only the model inferred, or all the details obtained during optimisation. Defaults to F.
 #' 
+#' @examples
+#' data(wilson_raw_data)
+#' cdata = initialise_raw_data(wilson_raw_data, max_expr = 'low')
+#' 
+#' #select only relevant cells.
+#' cell_ind = grepl('cmp', rownames(cdata)) | grepl('gmp', rownames(cdata)) 
+#' fcdata = cdata[cell_ind,]
+#' 
+#' #select genes to be included.
+#' gene_ind = c('fli1', 'gata1', 'gata2', 'gfi1', 'scl', 'sfpi1') 
+#' fcdata = fcdata[, gene_ind]
+#' 
+#' final_model = model_train(cdata=fcdata, max_varperrule=2)
+#' plotBM(final_model)
+#' 
 #' @export
 model_train = function(cdata, bmodel=NULL, istate=NULL, max_varperrule=6, and_bool=T, self_loop=F, con_thre=0.3, tol=1e-6, verbose=F, detailed_output=F)
 {

@@ -27,7 +27,7 @@ Rcpp::NumericVector rcpp_validate(Rcpp::NumericMatrix inf_mat, Rcpp::NumericMatr
   int tn=0;
   int fp=0;
   int fn=0;
-  for(auto i=0; i<inf_mat.nrow(); i++) {
+  for(signed int i=0; i<inf_mat.nrow(); i++) {
     //Convert R objects into C++ objects.
     Rcpp::NumericVector xr = inf_mat.row(i);
     Rcpp::NumericVector yr = true_mat.row(i);
@@ -37,7 +37,7 @@ Rcpp::NumericVector rcpp_validate(Rcpp::NumericMatrix inf_mat, Rcpp::NumericMatr
     
     //Calculate the frequency of numbers.
     //tp=true positive [1,1], tn=true negative [0,0], fp=false positive [1,0], fn=false negative [0,1].
-    for(unsigned k=0; k<x.size(); k++) {
+    for(unsigned int k=0; k<x.size(); k++) {
       z.push_back(x[k] + y[k]); //Calculate the summation of x and y between each element.
                 
       if(z[k] == 2) {
@@ -56,7 +56,9 @@ Rcpp::NumericVector rcpp_validate(Rcpp::NumericMatrix inf_mat, Rcpp::NumericMatr
     }
   }
   
-  std::vector<int> output{tp, tn, fp, fn};
+  //std::vector<int> output{tp, tn, fp, fn}; c++11 only
+  int tmp_arr[4] = {tp, tn, fp, fn};
+  std::vector<int> output(&tmp_arr[0], &tmp_arr[0]+4);
 
   return Rcpp::wrap(output);
 }

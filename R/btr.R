@@ -17,3 +17,8 @@ NULL
 #' @useDynLib BTR
 #' @importFrom Rcpp sourceCpp evalCpp
 NULL
+
+#' @importFrom grDevices rgb
+#' @importFrom stats aggregate kmeans median rbinom runif
+#' @importFrom utils combn write.csv
+NULL

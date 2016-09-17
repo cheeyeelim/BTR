@@ -104,7 +104,7 @@ initialise_data = function(state, aslogic=F)
 {
   if(class(state) == 'numeric' | class(state) == 'logical')
   {
-    state = t(data.frame(istate))
+    state = t(data.frame(state))
   }
   
   #Store column and row names.
@@ -132,10 +132,10 @@ initialise_data = function(state, aslogic=F)
   #colnames(state) = tolower(cn_tmp)
   
   #Order colname names alphabetically.
-  if(all(grepl('v[0-9]+s', cn_tmp))) #if variable names are in the form of v1s, v2s, etc.
+  if(all(grepl('^v[0-9]+s', cn_tmp))) #if variable names are in the form of v1s, v2s, etc.
   {
     state = state[, order(as.numeric(gsub('v([0-9]+)s', '\\1', cn_tmp)))]
-  } else if(all(grepl('G[0-9]+', cn_tmp))) #if variable names are in the form of v1s, v2s, etc.
+  } else if(all(grepl('^G[0-9]+', cn_tmp))) #if variable names are in the form of v1s, v2s, etc.
   {
     state = state[, order(as.numeric(gsub('G([0-9]+)', '\\1', cn_tmp)))]
   } else

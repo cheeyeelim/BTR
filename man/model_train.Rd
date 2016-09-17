@@ -33,4 +33,20 @@ model_train(cdata, bmodel = NULL, istate = NULL, max_varperrule = 6,
 This function performs model training to find the best model, using information from data. It requires an initial state supplied to perform the search, and an initial model can also be supplied to be included in the initial population.
 Note that if a model is supplied, and the genes in the model is different from the genes in the data, only the genes overlapping between model and data will be retained for further analysis.
 }
+\examples{
+data(wilson_raw_data)
+cdata = initialise_raw_data(wilson_raw_data, max_expr = 'low')
+
+#select only relevant cells.
+cell_ind = grepl('cmp', rownames(cdata)) | grepl('gmp', rownames(cdata)) 
+fcdata = cdata[cell_ind,]
+
+#select genes to be included.
+gene_ind = c('fli1', 'gata1', 'gata2', 'gfi1', 'scl', 'sfpi1') 
+fcdata = fcdata[, gene_ind]
+
+final_model = model_train(cdata=fcdata, max_varperrule=2)
+plotBM(final_model)
+
+}
 

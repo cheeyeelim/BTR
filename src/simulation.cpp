@@ -2,7 +2,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
-#include <regex>
+//#include <regex>
 #include <vector>
 #include <iterator>
 #include <map>
@@ -36,13 +36,13 @@ bool cpp_eval_bool(vector<string> arule, vector<string> irule, vector<string> mv
   std::map<std::string, bool> mmap;
   
   mmap.insert(std::make_pair("0", false)); //handles 0 in the rule.
-  for(unsigned i=0; i<mvar.size(); i++) {
+  for(unsigned int i=0; i<mvar.size(); i++) {
     mmap.insert(std::make_pair(mvar[i], val[i]));
   }
   
   //Replace rules with values.
   std::vector<bool> arule_bool; 
-  for(unsigned  i=0; i<arule.size(); i++) {
+  for(unsigned int  i=0; i<arule.size(); i++) {
     if(arule[i].find("&") == std::string::npos) { //string::npos=-1, which represents a non-position, and is equivalent to not found.
       //if not containing & in the string. 
       arule_bool.push_back(mmap[arule[i]]);
@@ -52,7 +52,7 @@ bool cpp_eval_bool(vector<string> arule, vector<string> irule, vector<string> mv
       std::vector<std::string> tmp = split(arule[i], '&'); //split up the A&B term into A, B. must be single quote, as the function only take single char as delimiter.
       
       bool tmp_ans = true; //initialised var.
-      for(unsigned  j=0;j<tmp.size(); j++) {
+      for(unsigned int j=0;j<tmp.size(); j++) {
         tmp_ans = tmp_ans && mmap[tmp[j]];
       }
       
@@ -61,7 +61,7 @@ bool cpp_eval_bool(vector<string> arule, vector<string> irule, vector<string> mv
   }
   
   std::vector<bool> irule_bool; 
-  for(unsigned  i=0; i<irule.size(); i++) {
+  for(unsigned int i=0; i<irule.size(); i++) {
     if(irule[i].find("&") == std::string::npos) { //string::npos=-1, which represents a non-position, and is equivalent to not found.
       //if not containing & in the string. 
       irule_bool.push_back(mmap[irule[i]]);
@@ -71,7 +71,7 @@ bool cpp_eval_bool(vector<string> arule, vector<string> irule, vector<string> mv
       std::vector<std::string> tmp = split(irule[i], '&'); //split up the A&B term into A, B. must be single quote, as the function only take single char as delimiter.
       
       bool tmp_ans = true; //initialised var.
-      for(unsigned  j=0;j<tmp.size(); j++) {
+      for(unsigned int j=0;j<tmp.size(); j++) {
         tmp_ans = tmp_ans && mmap[tmp[j]];
       }
       
@@ -81,14 +81,14 @@ bool cpp_eval_bool(vector<string> arule, vector<string> irule, vector<string> mv
   
   //evaluate both arule and irule to give a single final boolean value.
   bool final_ans = false;
-  for(unsigned  i=0; i<arule_bool.size(); i++) {
+  for(unsigned int i=0; i<arule_bool.size(); i++) {
     if(arule_bool[i] == true) { //if any activator is true, then final ans will be true.
       final_ans = true;
       break;
     }
   }
   
-  for(unsigned  i=0; i<irule_bool.size(); i++) {
+  for(unsigned int i=0; i<irule_bool.size(); i++) {
     if(irule_bool[i] == true) { //if any inhibitor is true, then final ans will be false.
       final_ans = false;
       break;
@@ -119,14 +119,14 @@ Rcpp::List rcpp_simulate(Rcpp::List bmodel, Rcpp::LogicalVector fstate, bool ver
   
   std::vector<std::string> tmp_string;
   //fill in model_act_rule vector of vector.
-  for(unsigned  i=0; i<model_gene.size(); i++) {
+  for(unsigned int  i=0; i<model_gene.size(); i++) {
     Rcpp::List tmp_list = bmodel["act_rule"];
     tmp_string = Rcpp::as<std::vector<std::string> >(tmp_list(i));
     model_actrule.push_back(tmp_string);
   }
   
   //fill in model_inh_rule vector of vector.
-  for(unsigned  i=0; i<model_gene.size(); i++) {
+  for(unsigned int  i=0; i<model_gene.size(); i++) {
     Rcpp::List tmp_list = bmodel["inh_rule"];
     tmp_string = Rcpp::as<std::vector<std::string> >(tmp_list(i));
     model_inhrule.push_back(tmp_string);
@@ -153,7 +153,7 @@ Rcpp::List rcpp_simulate(Rcpp::List bmodel, Rcpp::LogicalVector fstate, bool ver
     //Rcpp::Rcout << "\n";
 
 		if(next_loop.size() != 0) {
-			for(unsigned  i=0; i<next_loop.size(); i++) { //take each state from the previous level.
+			for(unsigned int i=0; i<next_loop.size(); i++) { //take each state from the previous level.
 				std::vector<bool> old_state = next_loop[i];
         
         if(verbose == true) {
@@ -162,7 +162,7 @@ Rcpp::List rcpp_simulate(Rcpp::List bmodel, Rcpp::LogicalVector fstate, bool ver
         }
         
         int steady_count = 0; //for checking steady state.
-        for(auto j=0; j<num_gene; j++) { //check for each gene if it changes in this state.
+        for(signed int j=0; j<num_gene; j++) { //check for each gene if it changes in this state.
           std::vector<bool> new_state = old_state;
           
           bool ans = false;
@@ -190,7 +190,8 @@ Rcpp::List rcpp_simulate(Rcpp::List bmodel, Rcpp::LogicalVector fstate, bool ver
     
     //To replace the R unique() called on part_state. all 3 std functions called below are smart to work on vector of vectors.
     std::sort(part_state.begin(), part_state.end()); //NOTE that std::unique only works on consecutive duplicates, so sorting is a must!
-    auto unique_point = std::unique(part_state.begin(), part_state.end()); //unique does not change the data. it creates a new copy of sorted data with all the duplicates placed at the end.
+		std::vector< std::vector<bool> >::iterator unique_point;
+		unique_point = std::unique(part_state.begin(), part_state.end()); //unique does not change the data. it creates a new copy of sorted data with all the duplicates placed at the end.
     part_state.erase(unique_point, part_state.end());
     
     //To concatenate two vectors of vectors.
@@ -199,14 +200,16 @@ Rcpp::List rcpp_simulate(Rcpp::List bmodel, Rcpp::LogicalVector fstate, bool ver
     
     //Check for duplicated vector in tmp_df.
     std::sort(tmp_df.begin(), tmp_df.end());
-    auto duplicated_point = std::adjacent_find(tmp_df.begin(), tmp_df.end());
+    std::vector< std::vector<bool> >::iterator duplicated_point;
+    duplicated_point = std::adjacent_find(tmp_df.begin(), tmp_df.end());
     
     //Rcpp::Rcout << "Size of before part_state : " << part_state.size() << "\n";
     
     if(duplicated_point != tmp_df.end()) { //if there is duplication
-      for(unsigned  j=0; j<all_state.size(); j++) {
-        auto x = std::find(part_state.begin(), part_state.end(), all_state[j]);
-        if(x != std::end(part_state)) { //if found.
+      for(unsigned int j=0; j<all_state.size(); j++) {
+        std::vector< std::vector<bool> >::iterator x;
+        x = std::find(part_state.begin(), part_state.end(), all_state[j]);
+        if(x != part_state.end()) { //if found. std::end(part_state)
           part_state.erase(x);
         }
       }
@@ -215,7 +218,7 @@ Rcpp::List rcpp_simulate(Rcpp::List bmodel, Rcpp::LogicalVector fstate, bool ver
     //Rcpp::Rcout << "Size of after part_state : " << part_state.size() << "\n";
 /*
     //debugging line.
-    for(unsigned k=0; k<part_state.size(); k++) {
+    for(int k=0; k<part_state.size(); k++) {
       std::copy(part_state[k].begin(), part_state[k].end(), std::ostream_iterator<bool>(Rcpp::Rcout, ","));
       Rcpp::Rcout << "\n";
     }

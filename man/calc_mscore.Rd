@@ -21,8 +21,6 @@ calc_mscore(bmodel, istate, fcdata, overlap_gene, max_varperrule,
 \item{model_encoding}{numeric. Only required if the bmodel is encoded.}
 
 \item{detail}{logical. Whether to give more details in score calculation. Default to FALSE.}
-
-\item{debug}{logical. Debugging mode.}
 }
 \description{
 This function calculates a score for a Boolean model wrt to a dataset.
